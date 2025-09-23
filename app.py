@@ -2,35 +2,48 @@ import dash
 from dash import dcc, html, Input, Output
 import json
 
-# Daten aus deinem Dokument
-with open("data/questions.json", "r", encoding="utf-8") as f:
+# Fragen aus JSON laden
+with open("data/fragen.json", "r", encoding="utf-8") as f:
     fragen = json.load(f)
 
-
-
-# App initialisieren
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
-    html.H1("Pitch Dashboard – Fragestellungen"),
-    html.Label("Kategorie auswählen:"),
-    dcc.Dropdown(
-        id="kategorie-dropdown",
-        options=[{"label": k, "value": k} for k in fragen.keys()],
-        value=list(fragen.keys())[0],  # erste Kategorie als Default
-        clearable=False
-    ),
-    html.Hr(),
-    html.Div(id="fragen-output")
+    # Header
+    html.Div([
+        html.Img(src="/assets/urban_apes_logo.png"),
+        html.H1("PITCH DASHBOARD - FRAGESTELLUNGEN"),
+        html.Span(children=["von ",html.B("Siri Klein"), " - ", html.I("23.09.2025")])
+    ], className="header"),
+
+    # Hauptcontainer
+    html.Div([
+        html.Div([
+            html.Label("KATEGORIE:"),
+            dcc.Dropdown(
+                id="kategorie-dropdown",
+                options=[{"label": k, "value": k} for k in fragen.keys()],
+                value=list(fragen.keys())[0],
+                clearable=False
+            )
+        ], className="card"),
+
+        html.Div(id="fragen-output", className="card")
+    ], className="main-container"),
+
+    # Footer
+    html.Footer("Urban Apes Pitch Dashboard © 2025")
 ])
 
-# Callback: zeigt die Fragen zur gewählten Kategorie
 @app.callback(
     Output("fragen-output", "children"),
     Input("kategorie-dropdown", "value")
 )
 def update_output(kategorie):
-    return html.Ul([html.Li(f) for f in fragen[kategorie]])
+    return html.Div([
+        html.H2(kategorie),
+        html.Ul([html.Li(f) for f in fragen[kategorie]])
+    ])
 
 if __name__ == "__main__":
     app.run(debug=True)
