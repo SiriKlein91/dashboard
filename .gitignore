@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtuelle Umgebung
+venv/
+.env/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+
+# Logfiles
+*.log
+
+# Build / Dist / Cache
+build/
+dist/
+*.egg-info/

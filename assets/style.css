@@ -11,77 +11,90 @@ body {
 .header {
     display: flex;
     align-items: center;
+    justify-content: space-between; /* Links und rechts verteilen */
     background-color: #1d242d; /* sehr dunkles Grau/Schwarz */
     color: #ffffff;
     padding: 20px 40px;
     margin: 0px 0px 20px 0px ;
 }
 
+
+
+
 .header img {
     height: 60px;
     margin-right: 25px;}
 
-.header h1 {
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Abstand zwischen Logo und Titel */
+}
+
+.header-left img {
+    height: 60px;
+}
+
+.header-left h1 {
     margin: 0;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 700;
     letter-spacing: 1px;
-    margin-right: 25px;
 }
 
-/* Dropdown und Label */
-label {
-    font-size: 18px;
-    margin-bottom: 8px;
-    display: block;
-    color: #555555;
+.header-right {
+    font-size: 16px;
+    color: #cccccc; /* etwas heller als Titel */
 }
 
-.Select-control, .Select-menu-outer, .Select-placeholder {
-    border-radius: 6px !important;
-    border: 1px solid #cccccc !important;
+
+/* Hauptcontainer in 2 Spalten */
+.main-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    padding: 20px 40px;
 }
 
-/* Fragen-Box */
-#fragen-output {
+/* Linke Spalte */
+.left-column {
+    flex: 1; /* nimmt 1 Teil Platz */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Rechte Spalte */
+.right-column {
+    flex: 2; /* nimmt doppelt so viel Platz wie links */
+}
+
+/* Kartenstyle beibehalten */
+.card {
     background: #f9f9f9;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 20px;
-    margin: 20px 40px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-#fragen-output ul {
-    list-style-type: disc;
-    padding-left: 20px;
-}
-
-#fragen-output li {
-    margin-bottom: 10px;
-    line-height: 1.5;
+/* Fragenliste als Buttons untereinander */
+.frage-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px;
+    margin: 6px 0;
     font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    background: #eeeeee;
+    cursor: pointer;
+    transition: background 0.2s ease;
 }
 
-/* Überschriften der Kategorien */
-h2 {
-    font-size: 28px;
-    color: #1a1a1a;
-    margin-bottom: 15px;
+.frage-btn:hover {
+    background: #ff6600;
+    color: white;
 }
 
-/* Elemente hover & Übergänge */
-a, button {
-    transition: all 0.3s ease;
-}
-
-a:hover, button:hover {
-    color: #ff6600; /* Beispiel für eine Akzentfarbe */
-}
-
-/* Optional: Footer oder Seiten‐Margins */
-footer {
-    text-align: center;
-    padding: 20px;
-    color: #777777;
-    font-size: 14px;
-}
