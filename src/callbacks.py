@@ -48,13 +48,8 @@ def register_callbacks(app):
 
         # Routing-Logik: Welche Frage → welcher Plot
         if kategorie == "Kundenverhalten und Zielgruppenanalyse":
-            if "Hauptkunden" in frage:
-                return dcc.Graph(figure=kundenverhalten.plot_altersverteilung())
-            elif "Geschlecht" in frage:
-                return dcc.Graph(figure=kundenverhalten.plot_geschlecht())
-            elif "Postleitzahl" in frage:
-                return dcc.Graph(figure=kundenverhalten.plot_herkunft())
-            else:
-                return html.Div(f"Noch kein Plot für: {frage}")
+            return dcc.Graph(figure=kundenverhalten.plot_customer_density_map())
+        else:
+            return html.Div(f"Noch kein Plot für: {frage}")
 
         return html.Div(f"Keine Visualisierung für Kategorie: {kategorie}")
