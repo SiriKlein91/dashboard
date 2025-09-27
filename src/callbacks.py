@@ -1,15 +1,15 @@
 from dash import html, dcc, Input, Output
 from dash.dependencies import ALL
 import json
+from src.classes.plot_service import PlotService
 
 # Plots importieren
-from src.plots import kundenverhalten
 
 # Fragen laden
 with open("data/questions.json", "r", encoding="utf-8") as f:
     fragen = json.load(f)
 
-def register_callbacks(app):
+def register_callbacks(app, plots: PlotService):
 
     # Fragenliste rendern
     @app.callback(
@@ -48,7 +48,7 @@ def register_callbacks(app):
 
         # Routing-Logik: Welche Frage → welcher Plot
         if kategorie == "Kundenverhalten und Zielgruppenanalyse":
-            return dcc.Graph(figure=kundenverhalten.plot_customer_density_map())
+            return dcc.Graph(figure=plots.density_plot())
         else:
             return html.Div(f"Noch kein Plot für: {frage}")
 
