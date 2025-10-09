@@ -1,5 +1,6 @@
 from src.classes.analytics_service import AnalyticsService
 import plotly.express as px
+import pandas as pd
 
 
 class PlotService:
@@ -25,4 +26,24 @@ class PlotService:
     def category_trend_plot(self, start=None, end=None):
         df = self.analytics.visits_by_category(start, end)
         fig = px.line(df, labels={"value": "Besuche", "time": "Monat"})
+        return fig
+    
+    def age_histogram(self, start= None, end= None, plz_list= None, dist= 5):
+        df= self.analytics.create_bins(start, end, plz_list, dist)
+        dummy = pd.DataFrame({"age_category": df["age_category"].cat.categories})
+        df_plot = pd.concat([df, dummy], ignore_index=True)
+        fig = px.histogram(
+            df_plot,
+            x= "age_category",
+            color="gender",
+            category_orders={"age_category": df["age_category"].cat.categories},
+            color_discrete_sequence=["#33ffdd", "#ff00ff", "#ffee00"]
+        )
+        fig.update_layout(
+            title="Altersverteilung",
+            xaxis_title="Altersgruppen",
+            yaxis_title="Anzahl Personen",
+            template="plotly_white"  # clean look
+        )
+
         return fig

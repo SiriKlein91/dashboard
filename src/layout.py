@@ -50,7 +50,8 @@ def create_layout():
                     start_date="2024-01-01",
                     end_date="2024-12-31"
                     ),
-                html.Div(id="graph-output", className="graph-figure")
+                html.Div(id="graph-output", className="graph-figure"),
+                html.Div(id="ausgabe")  # Platzhalter für den Callback-Output
                 ], className="card right-column")
 
             #html.Div(id="graph-output", className="card right-column")
