@@ -40,7 +40,20 @@ def create_layout():
             ], className="left-column"),
 
             # Rechte Spalte: Graph-Ausgabe
-            html.Div(id="graph-output", className="card right-column")
+            
+
+            html.Div([
+                dcc.DatePickerRange(
+                    id="date-picker",
+                    min_date_allowed="2024-01-01",
+                    max_date_allowed="2024-12-31",
+                    start_date="2024-01-01",
+                    end_date="2024-12-31"
+                    ),
+                html.Div(id="graph-output", className="graph-figure")
+                ], className="card right-column")
+
+            #html.Div(id="graph-output", className="card right-column")
         ], className="main-container"),
 
         html.Footer("Urban Apes Pitch Dashboard © 2025")
