@@ -154,6 +154,34 @@ def generate_entries(customers, start=start_date, end=end_date, seed=42):
             entry_id += 1
 
     df_entries = pd.DataFrame(entries, columns=["entry_id", "customer_id", "admission", "time"])
+    n = df_entries.shape[0]
+    df_entries["admission_detail"] = None
+
+    # 1. Tageseintritt → regulär oder ermäßigt
+    mask_tageseintritt = df_entries["admission"] == "Tageseintritt"
+    df_entries.loc[mask_tageseintritt, "admission_detail"] = np.random.choice(
+        ["Regulär", "Ermäßigt"], 
+        size=mask_tageseintritt.sum(), 
+        p=[0.7, 0.3]
+    )
+
+    # 2. Abo → S, M, L, L-Fremdhalle
+    mask_abo = df_entries["admission"] == "Abo"
+    df_entries.loc[mask_abo, "admission_detail"] = np.random.choice(
+        ["S-Abo", "M-Abo", "L-Abo", "L-Abo Fremdhalle"], 
+        size=mask_abo.sum(), 
+        p=[0.25, 0.25, 0.35, 0.15]
+    )
+    mask_random = np.random.rand(n) < 0.05
+    df_entries.loc[mask_random, "admission"] = "Sonstige"
+
+    mask_sonstige = df_entries["admission"] == "Sonstige"
+    df_entries.loc[mask_sonstige, "admission_detail"] = np.random.choice(
+        ["Probemonat", "Day Ticket", "Boulderbuddy"], size=mask_sonstige.sum(), p=[0.2, 0.6, 0.2]
+    )
+    # USC → nur "USC"
+    mask_usc = df_entries["admission"] == "USC"
+    df_entries.loc[mask_usc, "admission_detail"] = "USC"
     return df_entries
 
 

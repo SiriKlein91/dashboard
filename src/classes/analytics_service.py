@@ -11,7 +11,7 @@ class AnalyticsService:
         self.customers = customers.df
         self.entries = entries.df
         # Mergen nach customer_id für Analysen
-        self.merged = self.entries.merge(self.customers, on="customer_id", how="left")
+        self.merged = self.entries.merge(self.customers, on="customer_id", how="left").drop(columns=["admission_y"]).rename(columns={"admission_x": "admission"})
 
     def __repr__(self):
         # Wenn die Instanz in der Konsole angezeigt wird
@@ -62,6 +62,11 @@ class AnalyticsService:
         df["age_category"] = df["age_category"].astype(cat_type)
     
         return(df)
+    
+    def admission_proportion(self, start=None, end=None, plz_list=None):
+        self.filter_data(start, end, plz_list)
+        df= self.merged.groupby(["admission", "admission_detail"]).size().reset_index(name="count")
+        return df
     
     def plz_geo_summary(self, start=None, end=None, plz_csv=PLZ_PATH, shapefile=SHAPEFILE_PATH):
         """

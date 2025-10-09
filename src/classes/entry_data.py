@@ -1,7 +1,7 @@
 import pandas as pd
 
 class EntryDataFrame:
-    REQUIRED_COLUMNS = ["entry_id", "customer_id", "admission", "time"]
+    REQUIRED_COLUMNS = ["entry_id", "customer_id", "admission", "time", "admission_detail"]
 
     def __init__(self, df: pd.DataFrame):
         # DataFrame kopieren, um Seiteneffekte zu vermeiden
@@ -17,6 +17,7 @@ class EntryDataFrame:
         self.df["entry_id"] = self.df["entry_id"].astype(int)
         self.df["customer_id"] = self.df["customer_id"].astype(int)
         self.df["admission"] = self.df["admission"].astype("category")
+        self.df["admission_detail"] = self.df["admission_detail"].astype("category")
 
     @classmethod
     def from_csv(cls, path: str):

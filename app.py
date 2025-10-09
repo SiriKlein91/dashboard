@@ -8,7 +8,7 @@ from src.classes.plot_service import PlotService
 
 
 CUSTOMER_PATH = "data/customers.csv"
-ENTRY_PATH = "data/entries.csv"
+ENTRY_PATH = "data/entry.csv"
 
 
 customers = CustomerDataFrame.from_csv(CUSTOMER_PATH)

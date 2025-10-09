@@ -66,14 +66,14 @@ def register_callbacks(app, plots: PlotService):
             return html.Div([
                 dcc.Graph(id="density-graph", figure=plots.density_plot(start=start_date, end=end_date)),
                 dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date)),
-                #plots.price_pie(start=start_date, end=end_date)
+                dcc.Graph(id="sunburst-diagram", figure=plots.sunburst_plot(start=start_date, end=end_date)),
             ])
         else:
             return html.Div(f"Noch kein Plot für: {frage}")
         
     @app.callback(
         Output("age-distribution", "figure"),
-        #Output("preis-pie", "figure"),
+        Output("sunburst-diagram", "figure"),
         Input("density-graph", "clickData"),
         Input("density-graph", "selectedData"),
         Input("date-picker", "start_date"),
@@ -90,9 +90,9 @@ def register_callbacks(app, plots: PlotService):
             plz_list = [clickData["points"][0]["hovertext"]]
         # Plots erzeugen
         hist = plots.age_histogram(start=start_date, end=end_date, plz_list=plz_list)
-        #pie = plots.price_pie(df_filtered)
+        sunburst = plots.sunburst_plot(start=start_date, end=end_date, plz_list=plz_list)
 
-        return hist#, pie
+        return hist, sunburst
 
     
 
