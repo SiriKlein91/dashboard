@@ -49,7 +49,7 @@ class AnalyticsService:
     
     def create_bins(self, start = None, end = None, plz_list = None, dist=5):
         from pandas.api.types import CategoricalDtype
-        import numpy as pd
+        import numpy as np
         df=self.filter_data(start, end, plz_list)
         arr = np.arange (20,60,dist)
         bins = [5,10, 15] + arr.tolist() + [100]
@@ -63,7 +63,7 @@ class AnalyticsService:
     
         return(df)
     
-    def plz_geo_summary(self, start=None, end=None, plz_csv="../data/plz_coords.csv", shapefile="../data/berlin_plz_shapefile/plz.shp"):
+    def plz_geo_summary(self, start=None, end=None, plz_csv=PLZ_PATH, shapefile=SHAPEFILE_PATH):
         """
         Liefert ein GeoDataFrame mit count, mean_age, PLZ-Koordinaten
         für den gewünschten Zeitraum.
