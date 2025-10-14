@@ -33,26 +33,26 @@ class AnalyticsService:
             df = df[df["country"].isin(country_list)]
         return df
 
-    def daily_visits(self, start=None, end=None, plz_list = None):
-        df = self.filter_data(start, end, plz_list)
+    def daily_visits(self, start=None, end=None, plz_list = None, country_list = None):
+        df = self.filter_data(start, end, plz_list, country_list)
         return df.groupby(df["time"].dt.date).size()
 
-    def visits_by_category(self, start=None, end=None, plz_list = None):
-        df = self.filter_data(start, end, plz_list)
+    def visits_by_category(self, start=None, end=None, plz_list = None, country_list = None):
+        df = self.filter_data(start, end, plz_list, country_list)
         return df.groupby(["admission", df["time"].dt.to_period("M")]).size().unstack(fill_value=0)
 
-    def plz_summary(self, start=None, end=None, plz_list = None):
-        df = self.filter_data(start, end, plz_list)
+    def plz_summary(self, start=None, end=None, plz_list = None, country_list = None):
+        df = self.filter_data(start, end, plz_list, country_list)
         return df.groupby("plz").agg(
             count=("entry_id", "size"),
             mean_age=("age", "mean")
         )
 
     
-    def create_bins(self, start = None, end = None, plz_list = None, dist=5):
+    def create_bins(self, start = None, end = None, plz_list = None, country_list = None, dist=5):
         from pandas.api.types import CategoricalDtype
         import numpy as np
-        df=self.filter_data(start, end, plz_list)
+        df=self.filter_data(start, end, plz_list, country_list)
         arr = np.arange (20,60,dist)
         bins = [5,10, 15] + arr.tolist() + [100]
         labels = ["5-10", "11-15", "15-20"]
@@ -65,9 +65,9 @@ class AnalyticsService:
     
         return(df)
     
-    def admission_proportion(self, start=None, end=None, plz_list=None):
-        self.filter_data(start, end, plz_list)
-        df= self.merged.groupby(["admission", "admission_detail"]).size().reset_index(name="count")
+    def proportion(self,group_list, start=None, end=None, plz_list = None, country_list = None):
+        df = self.filter_data(start, end, plz_list, country_list)
+        df= df.groupby(group_list).size().reset_index(name="count")
         return df
     
     def plz_geo_summary(self, start=None, end=None, plz_csv=PLZ_PATH, shapefile=SHAPEFILE_PATH):
@@ -85,7 +85,7 @@ class AnalyticsService:
         # PLZ-Koordinaten und Shapefile joinen
         #df_plz = pd.read_csv(plz_csv)
         gdf = gpd.read_file(shapefile)
-        gdf['plz'] = gdf['plz'].astype(int)
+        gdf['plz'] = gdf['plz'].astype(str)
     
         gdf_merged = gdf.merge(summary, left_on="plz", right_on="plz", how="left")
         gdf_merged = gdf_merged.to_crs(epsg=4326)

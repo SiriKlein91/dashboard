@@ -17,7 +17,7 @@ class CustomerDataFrame:
         self.df["admission"] = self.df["admission"].astype("category")
         self.df["age"] = self.df["age"].astype(int)
         self.df["gender"] = self.df["gender"].astype("category")
-        self.df["plz"] = self.df["plz"].astype(int)
+        self.df["plz"] = self.df["plz"].astype(str)
         self.df["city"] = self.df["city"].astype("category")
         self.df["country"] = self.df["country"].astype("category")
         self.df["continent"] = self.df["continent"].astype("category")
