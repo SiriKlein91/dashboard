@@ -21,7 +21,7 @@ class AnalyticsService:
         # Wenn print() aufgerufen wird
         return str(self.merged)
 
-    def filter_data(self, start=None, end=None, plz_list=None):
+    def filter_data(self, start=None, end=None, plz_list=None, country_list = None):
         df = self.merged
         if start:
             df = df[df["time"] >= pd.to_datetime(start)]
@@ -29,6 +29,8 @@ class AnalyticsService:
             df = df[df["time"] <= pd.to_datetime(end)]
         if plz_list:
             df = df[df["plz"].isin(plz_list)]
+        if country_list:
+            df = df[df["country"].isin(country_list)]
         return df
 
     def daily_visits(self, start=None, end=None, plz_list = None):

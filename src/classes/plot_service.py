@@ -64,13 +64,31 @@ class PlotService:
 
         return fig
     
-    def sunburst_plot(self, start=None, end= None, plz_list = None):
-        df= self.analytics.admission_proportion(start, end, plz_list)
+    def sunburst_plot(self,group_list, start=None, end= None, plz_list = None, country_list = None, limit = None):
+        df= self.analytics.proportion(group_list, start, end, plz_list, country_list)
         total = df["count"].sum()
         df["percent_total"] = df["count"] / total * 100
+        
+        if limit:
+            last_col = group_list[-1]
+            df = df[df["count"] > 0]
+
+            df[last_col] = df[last_col].astype(str)
+        
+            # Kleine Gruppen identifizieren
+            small = df["percent_total"] < limit
+        
+            if small.any():
+                # Neue Kategorie "Sonstige" einfügen
+                df.loc[small, last_col] = "Sonstige"
+                df = (df.groupby(group_list,as_index=False, observed=True).agg({"count": "sum"}))
+                total = df["count"].sum()
+                df["percent_total"] = df["count"] / total * 100
+
+                
         fig = px.sunburst(
             df,
-            path=['admission', 'admission_detail'],
+            path=group_list,
             values='count',
             hover_data=["count", "percent_total"]
         )

@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 CUSTOMER_PATH = "data/customers.csv"
 ENTRY_PATH = "data/entry.csv"
 PLZ_PATH = "data/plz_coords.csv"
+COUNTRY_PATH = "data/countries_and_cities.json"
+CONTINENT_PATH = "data/continents.json"
 
 start_date="2024-01-01"
 end_date ="2024-12-31"
@@ -48,10 +50,17 @@ def download_plz_coords(dest_path=PLZ_PATH):
     return df
 
 
-
-def generate_customers(n=1000, seed=42, plz_path=PLZ_PATH):
+def generate_customers(n=1000, seed=42, plz_path=PLZ_PATH, country_path = COUNTRY_PATH, continent_path = CONTINENT_PATH):
+    import json
     np.random.seed(seed)
     random.seed(seed)
+
+    with open(country_path, encoding="utf-8") as f:
+        country_dic = json.load(f)
+
+    with open(continent_path, "r", encoding="utf-8") as f:
+        country_to_continent = json.load(f)
+
 
     # ----------------------------
     # PLZ-Verteilung wie vorher
@@ -75,7 +84,9 @@ def generate_customers(n=1000, seed=42, plz_path=PLZ_PATH):
     probs = weights / weights.sum()
 
     plz = np.random.choice(berlin_plz_list, size=n, p=probs.values)
-
+    city = np.array(["Berlin"]*n)
+    country = np.array(["Deutschland"]*n)
+    continent = np.array(["Europe"]*n)
     # ----------------------------
     # Basisattribute
     geschlechter = np.random.choice(["m", "w", "d"], size=n, p=[0.65, 0.25, 0.10])
@@ -93,12 +104,79 @@ def generate_customers(n=1000, seed=42, plz_path=PLZ_PATH):
         "age": alter,
         "gender": geschlechter,
         "plz": plz,
-        "admission": eintrittsarten
+        "city": city,
+        "country": country,
+        "admission": eintrittsarten,
+        "continent": continent
+    })
+    
+
+    # Wir nehmen 50% mehr Kund*innen (deutsche + ausländische)
+    n_foreign = int(n * 0.2)
+    
+    # Auswahl von Ländern (ohne Deutschland)
+    available_countries = [c for c in country_dic.keys() if c not in ["Germany", "Deutschland"]]
+    selected_countries = random.choices(available_countries, k=n_foreign)
+    
+    # Zufällige Städte und PLZ aus den gewählten Ländern
+    city_f = []
+    plz_f = []
+    continent_f = []
+    for c in selected_countries:
+        city_zip = random.choice(country_dic[c])
+        city_f.append(city_zip[0])
+        plz_f.append(city_zip[1])
+        continent_f.append(country_to_continent[c])
+    
+    country_f = np.array(selected_countries)
+    geschlechter_f = np.random.choice(["m", "w", "d"], size=n_foreign, p=[0.75, 0.20, 0.05])
+    alter_f = np.random.randint(18, 60, n_foreign)
+    eintrittsarten_f = np.random.choice(["USC", "Abo", "Tageseintritt"], size=n_foreign, p=[1/20, 0, 19/20])
+    
+    df_customer_foreign = pd.DataFrame({
+        "customer_id": range(n+1, n+n_foreign+1),
+        "age": alter_f,
+        "gender": geschlechter_f,
+        "plz": plz_f,
+        "city": city_f,
+        "country": country_f,
+        "admission": eintrittsarten_f,
+        "continent": continent_f
     })
 
-    return df_customers
 
+    # Wir nehmen 50% mehr Kund*innen (deutsche + ausländische)
+    n_domestic = int(n * 0.3)
 
+    selected_countries = random.choices(["Deutschland"], k=n_domestic)
+    
+    # Zufällige Städte und PLZ aus den gewählten Ländern
+    city_d = []
+    plz_d = []
+    continent_d = np.array(["Europe"]*n_domestic)
+    for c in selected_countries:
+        city_zip = random.choice(country_dic[c])
+        city_d.append(city_zip[0])
+        plz_d.append(city_zip[1])
+    
+    country_d = np.array(selected_countries)
+    geschlechter_d = np.random.choice(["m", "w", "d"], size=n_domestic, p=[0.65, 0.30, 0.05])
+    alter_d = np.random.randint(18, 60, n_domestic)
+    eintrittsarten_d = np.random.choice(["USC", "Abo", "Tageseintritt"], size=n_domestic, p=[0.1, 0.1, 0.8])
+
+    df_customer_domestic = pd.DataFrame({
+        "customer_id": range(n+n_foreign+1, n+n_foreign+n_domestic+1),
+        "age": alter_d,
+        "gender": geschlechter_d,
+        "plz": plz_d,
+        "city": city_d,
+        "country": country_d,
+        "admission": eintrittsarten_d,
+        "continent": continent_d
+    })
+
+    df_customer = pd.concat([df_customers, df_customer_foreign, df_customer_domestic])
+    return df_customer
 
 def generate_entries(customers, start=start_date, end=end_date, seed=42):
     np.random.seed(seed)
