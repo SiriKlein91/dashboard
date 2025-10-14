@@ -2,14 +2,12 @@ from dash import html, dcc, Input, Output
 from dash.dependencies import ALL
 import json
 from src.classes.plot_service import PlotService
+from globals import FRAGEN
 
 #Glabale Button Variable
 _last_button = None
 
 
-# Fragen laden
-with open("data/questions.json", "r", encoding="utf-8") as f:
-    fragen = json.load(f)
 
 
 def register_callbacks(app, plots: PlotService):
@@ -29,7 +27,7 @@ def register_callbacks(app, plots: PlotService):
                     n_clicks=0,
                     className="frage-btn"
                 )
-                for i, f in enumerate(fragen[kategorie])
+                for i, f in enumerate(FRAGEN[kategorie])
             ])
         ])
 
@@ -59,21 +57,23 @@ def register_callbacks(app, plots: PlotService):
 
         kategorie = button_id["kategorie"]
         index = int(button_id["index"])
-        frage = fragen[kategorie][index]
+        frage = FRAGEN[kategorie][index]
 
         # Hier eleganter Routing-Switch
         if kategorie == "Kundenverhalten und Zielgruppenanalyse":
             return html.Div([
                 dcc.Graph(id="density-graph", figure=plots.density_plot(start=start_date, end=end_date)),
                 dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date)),
-                dcc.Graph(id="sunburst-diagram", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date)),
+                dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date)),
+                dcc.Graph(id="country-distribution", figure=plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)),
             ])
         else:
             return html.Div(f"Noch kein Plot für: {frage}")
         
     @app.callback(
         Output("age-distribution", "figure"),
-        Output("sunburst-diagram", "figure"),
+        Output("admission-distribution", "figure"),
+        Output("country-distribution", "figure"),
         Input("density-graph", "clickData"),
         Input("density-graph", "selectedData"),
         Input("date-picker", "start_date"),
@@ -91,8 +91,9 @@ def register_callbacks(app, plots: PlotService):
         # Plots erzeugen
         hist = plots.age_histogram(start=start_date, end=end_date, plz_list=plz_list)
         sunburst = plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date, plz_list=plz_list)
+        map = plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)
 
-        return hist, sunburst
+        return hist, sunburst, map
 
     
 

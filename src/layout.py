@@ -2,10 +2,9 @@ import dash
 from dash import dcc, html, Input, Output
 from dash.dependencies import ALL
 import json
+from globals import FRAGEN
 
-# Fragen aus JSON laden
-with open("data/questions.json", "r", encoding="utf-8") as f:
-    fragen = json.load(f)
+
 
 def create_layout():
     return html.Div([
@@ -30,8 +29,8 @@ def create_layout():
                     html.Label("KATEGORIE:"),
                     dcc.Dropdown(
                         id="kategorie-dropdown",
-                        options=[{"label": k, "value": k} for k in fragen.keys()],
-                        value=list(fragen.keys())[0],
+                        options=[{"label": k, "value": k} for k in FRAGEN.keys()],
+                        value=list(FRAGEN.keys())[0],
                         clearable=False
                     )
                 ], className="card"),

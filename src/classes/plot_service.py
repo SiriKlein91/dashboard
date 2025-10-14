@@ -1,6 +1,10 @@
 from src.classes.analytics_service import AnalyticsService
 import plotly.express as px
 import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+from globals import DE_STATES, CITY_DIC
+
 
 
 class PlotService:
@@ -94,4 +98,90 @@ class PlotService:
         )
         #fig.update_traces(hovertemplate="%{label}<br>Anzahl: %{customdata[0]}<br>Prozent Gesamt: %{customdata[1]:.1f}%")
         fig.update_traces(hovertemplate="%{label}<br>Anzahl: %{value}<br>Prozent Parent: %{percentParent:.1%}<br>Prozent Gesamt: %{percentRoot:.1%}")
+        return fig
+    
+    def map_plot(self, group_list, start = None, end = None, plz_list = None, country_list = None):
+        df = self.analytics.proportion(group_list, start, end, plz_list, country_list)
+        df["size_log"] = np.log1p(df["count"]) 
+        df["country"] = df["country"].astype(str)
+        df.loc[df[df.loc[:,"country"]== "Deutschland"].index, "country"] = "Germany"
+
+
+        fig = px.scatter_geo(
+            df,
+            locations="country",
+            locationmode="country names",
+            color="continent",
+            hover_name="country",
+            size="size_log",
+            projection="natural earth",
+            title="Kundenverteilung weltweit",
+            hover_data={
+                "count": True,
+                "size_log": False,      # wird nicht angezeigt
+                "continent": True
+            }
+        )
+        return fig
+    
+    def germany_map_plot(self, group_list, start = None, end = None, plz_list = None, country_list = None):
+        
+        df = self.analytics.proportion(group_list, start, end, plz_list, country_list)
+        df= df[df["country"] == "Deutschland"]
+        city_coords = pd.DataFrame(CITY_DIC).T.reset_index()
+        city_coords.columns = ["city", "lat", "lon"]
+        df = df.merge(city_coords, on="city", how="left")
+        df["size_log"] = np.log1p(df["count"]) 
+
+        # 1. Bundesländergrenzen zuerst (kein Hover)
+        choropleth = go.Choropleth(
+        geojson=DE_STATES,
+        locations=[s["properties"]["name"] for s in DE_STATES["features"]],
+        z=[0] * len(DE_STATES["features"]),
+        featureidkey="properties.name",
+        showscale=False,
+        hoverinfo="none",
+        marker_line_color="rgba(80,80,80,0.6)",
+        marker_line_width=0.6,
+        colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
+        )
+
+        # 2. Städtepunkte mit Hovertext (liegen automatisch oben)
+        scatter = go.Scattergeo(
+            lat=df["lat"],
+            lon=df["lon"],
+            text=df["city"] + "<br>Kundeneintritte: " + df["count"].astype(str),
+            hoverinfo="text",
+            marker=dict(
+                size=df["size_log"] * 5,
+                color=df["size_log"],
+                colorscale="Viridis",
+                showscale=True,
+                colorbar=dict(title="Kundenanzahl"),
+                line=dict(width=0.5, color="black")
+            )
+        )
+
+        # 3. Figur aufbauen
+        fig = go.Figure()
+
+        fig.add_trace(choropleth)  # Bundesländer zuerst
+        fig.add_trace(scatter)     # Städte danach
+
+        # 4. Karteneinstellungen
+        fig.update_geos(
+            fitbounds="locations",
+            visible=False,
+            showcountries=False,
+            showframe=False,
+            showcoastlines=False,
+            projection_scale=8.2,
+            center=dict(lat=51.163, lon=10.447)
+        )
+
+        fig.update_layout(
+            title=dict(text="Kundenverteilung in Deutschland", x=0.5, xanchor="center", font=dict(size=18)),
+            margin=dict(r=0, l=0, b=0, t=40),
+            geo_bgcolor="rgba(0,0,0,0)"
+        )
         return fig

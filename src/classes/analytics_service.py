@@ -1,10 +1,7 @@
 import pandas as pd
 from src.classes.customer_data import CustomerDataFrame
 from src.classes.entry_data import EntryDataFrame
-import geopandas as gpd
-
-PLZ_PATH = "data/plz_coords.csv"
-SHAPEFILE_PATH = "data/berlin_plz_shapefile/plz.shp"
+from globals import GDF
 
 class AnalyticsService:
     def __init__(self, customers: CustomerDataFrame, entries: EntryDataFrame):
@@ -70,7 +67,7 @@ class AnalyticsService:
         df= df.groupby(group_list).size().reset_index(name="count")
         return df
     
-    def plz_geo_summary(self, start=None, end=None, plz_csv=PLZ_PATH, shapefile=SHAPEFILE_PATH):
+    def plz_geo_summary(self, start=None, end=None):
         """
         Liefert ein GeoDataFrame mit count, mean_age, PLZ-Koordinaten
         für den gewünschten Zeitraum.
@@ -84,10 +81,9 @@ class AnalyticsService:
     
         # PLZ-Koordinaten und Shapefile joinen
         #df_plz = pd.read_csv(plz_csv)
-        gdf = gpd.read_file(shapefile)
-        gdf['plz'] = gdf['plz'].astype(str)
+        
     
-        gdf_merged = gdf.merge(summary, left_on="plz", right_on="plz", how="left")
+        gdf_merged = GDF.merge(summary, left_on="plz", right_on="plz", how="left")
         gdf_merged = gdf_merged.to_crs(epsg=4326)
     
         return gdf_merged
