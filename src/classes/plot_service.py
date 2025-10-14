@@ -28,8 +28,8 @@ class PlotService:
         fig = px.line(df, labels={"value": "Besuche", "time": "Monat"})
         return fig
     
-    def age_histogram(self, start= None, end= None, plz_list= None, dist= 5):
-        df = self.analytics.create_bins(start, end, plz_list, dist)
+    def age_histogram(self, start= None, end= None, plz_list= None, country_list = None, dist= 5):
+        df = self.analytics.create_bins(start, end, plz_list, country_list, dist)
         categories = df["age_category"].cat.categories
 
         # Gruppieren und fehlende Kategorien auffüllen

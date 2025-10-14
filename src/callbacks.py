@@ -37,7 +37,7 @@ def register_callbacks(app, plots: PlotService):
         Output("graph-output", "children"),
         Input({"type": "frage-button", "kategorie": ALL, "index": ALL}, "n_clicks"),
         Input("date-picker", "start_date"),
-        Input("date-picker", "end_date")
+        Input("date-picker", "end_date"),
     )
     def display_graph(n_clicks_list, start_date, end_date):
         global _last_button
@@ -66,7 +66,7 @@ def register_callbacks(app, plots: PlotService):
             return html.Div([
                 dcc.Graph(id="density-graph", figure=plots.density_plot(start=start_date, end=end_date)),
                 dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date)),
-                dcc.Graph(id="sunburst-diagram", figure=plots.sunburst_plot(start=start_date, end=end_date)),
+                dcc.Graph(id="sunburst-diagram", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date)),
             ])
         else:
             return html.Div(f"Noch kein Plot für: {frage}")
@@ -90,7 +90,7 @@ def register_callbacks(app, plots: PlotService):
             plz_list = [clickData["points"][0]["hovertext"]]
         # Plots erzeugen
         hist = plots.age_histogram(start=start_date, end=end_date, plz_list=plz_list)
-        sunburst = plots.sunburst_plot(start=start_date, end=end_date, plz_list=plz_list)
+        sunburst = plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date, plz_list=plz_list)
 
         return hist, sunburst
 
