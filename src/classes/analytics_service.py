@@ -64,7 +64,7 @@ class AnalyticsService:
     
     def proportion(self,group_list, start=None, end=None, plz_list = None, country_list = None):
         df = self.filter_data(start, end, plz_list, country_list)
-        df= df.groupby(group_list).size().reset_index(name="count")
+        df= df.groupby(group_list, observed=False).size().reset_index(name="count")
         return df
     
     def plz_geo_summary(self, start=None, end=None):

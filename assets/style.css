@@ -56,8 +56,6 @@ body {
 }
 
 
-
-
 /* Zeile mit zwei fix nebeneinanderstehenden Grafiken */
 .row-container {
     display: flex;
@@ -72,15 +70,15 @@ body {
 /* Linke Karte (größer) */
 .row-container > .dash-graph:first-child,
 .row-container > div:first-child {
-    flex: 3;
-    max-width: 75%;
+    flex: 2;
+    max-width: 66%;
 }
 
 /* Rechte Karte (kleiner) */
 .row-container > .dash-graph:last-child,
 .row-container > div:last-child {
     flex: 1;
-    max-width: 25%;
+    max-width: 33%;
 }
 
 /* Kartenoptik beibehalten */

@@ -3,7 +3,8 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from globals import DE_STATES, CITY_DIC
+from globals import DE_STATES, CITY_DIC, GDF_SUBWAY_EDGES
+import itertools
 
 
 
@@ -11,8 +12,16 @@ class PlotService:
     def __init__(self, analytics: AnalyticsService):
         self.analytics = analytics
 
+
+
+
     def density_plot(self, start=None, end=None):
+        LINE_COLORS = px.colors.qualitative.Dark24  # 24 verschiedene Farben
+        color_cycle = itertools.cycle(LINE_COLORS)
+        # PLZ-Daten für Choropleth
         df = self.analytics.plz_geo_summary(start, end)
+
+        # Choropleth-Karte
         fig = px.choropleth_mapbox(
             df,
             geojson=df.geometry,
@@ -21,16 +30,33 @@ class PlotService:
             hover_name="plz",
             hover_data=["mean_age"],
             mapbox_style="carto-positron",
-            zoom=9,
+            zoom=11,
             center={"lat": 52.52, "lon": 13.405},
+            opacity=0.6
         )
-        fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+        fig.update_layout(
+            mapbox = {
+                "style": "carto-positron",
+                "layers": [
+                    {
+                        "sourcetype": "geojson",
+                        "source": GDF_SUBWAY_EDGES,
+                        "type": "line",
+                        "color": "red",
+                        "line": {"width": 2},
+                    }
+                ],
+                "center": {"lat": 52.52, "lon": 13.405},
+                "zoom": 11,
+            }
+        )
+
         return fig
 
-    def category_trend_plot(self, start=None, end=None):
-        df = self.analytics.visits_by_category(start, end)
-        fig = px.line(df, labels={"value": "Besuche", "time": "Monat"})
-        return fig
+
+
+
     
     def age_histogram(self, start= None, end= None, plz_list= None, country_list = None, dist= 5):
         df = self.analytics.create_bins(start, end, plz_list, country_list, dist)
@@ -38,7 +64,7 @@ class PlotService:
 
         # Gruppieren und fehlende Kategorien auffüllen
         df_plot = (
-        df.groupby(["age_category", "gender"])
+        df.groupby(["age_category", "gender"], observed=False)
         .size()
         .unstack(fill_value=0)                # fehlende gender/category-Kombis = 0
         .reindex(categories, fill_value=0)    # alle Alterskategorien sichtbar

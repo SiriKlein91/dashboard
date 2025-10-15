@@ -13,9 +13,16 @@ SHAPEFILE_BERLIN_PATH = "data/berlin_plz_shapefile/plz.shp"
 QUESTION_PATH = "data/questions.json"
 
 
+
 # GeoDaten Berlin
 GDF = gpd.read_file(SHAPEFILE_BERLIN_PATH)
 GDF['plz'] = GDF['plz'].astype(str)
+
+# Nodes einlesen
+
+# Edges einlesen
+GDF_SUBWAY_EDGES = gpd.read_file("data/berlin_subway.geojson")
+GDF_SUBWAY_EDGES = json.loads(GDF_SUBWAY_EDGES.to_json())
 
 # City-Dictionary
 with open(CITY_PATH, "r", encoding="utf-8") as f:
@@ -28,3 +35,5 @@ with open(SHAPEFILE_GERMANY_PATH, "r", encoding="utf-8") as f:
 # Fragen
 with open(QUESTION_PATH, "r", encoding="utf-8") as f:
     FRAGEN = json.load(f)
+
+
