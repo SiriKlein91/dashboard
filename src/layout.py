@@ -2,9 +2,10 @@ import dash
 from dash import dcc, html, Input, Output
 from dash.dependencies import ALL
 import json
-from globals import FRAGEN
 
-
+# Fragen aus JSON laden
+with open("data/questions.json", "r", encoding="utf-8") as f:
+    fragen = json.load(f)
 
 def create_layout():
     return html.Div([
@@ -22,26 +23,8 @@ def create_layout():
         ], className="header"),
 
         # Hauptcontainer mit 2 Spalten
-        html.Div([
-            # Linke Spalte: Dropdown + Fragenliste
-            html.Div([
-                html.Div([
-                    html.Label("KATEGORIE:"),
-                    dcc.Dropdown(
-                        id="kategorie-dropdown",
-                        options=[{"label": k, "value": k} for k in FRAGEN.keys()],
-                        value=list(FRAGEN.keys())[0],
-                        clearable=False
-                    )
-                ], className="card"),
-
-                html.Div(id="fragen-output", className="card")
-            ], className="left-column"),
-
-            # Rechte Spalte: Graph-Ausgabe
-            
-
-            html.Div([
+        html.Div([               
+            #html.Div([
                 dcc.DatePickerRange(
                     id="date-picker",
                     min_date_allowed="2024-01-01",
@@ -51,9 +34,8 @@ def create_layout():
                     ),
                 html.Div(id="graph-output", className="graph-figure"),
                 html.Div(id="ausgabe")  # Platzhalter für den Callback-Output
-                ], className="card right-column")
+                #], className="card right-column")
 
-            #html.Div(id="graph-output", className="card right-column")
         ], className="main-container"),
 
         html.Footer("Urban Apes Pitch Dashboard © 2025")

@@ -13,80 +13,44 @@ _last_button = None
 def register_callbacks(app, plots: PlotService):
     import dash
 
-    @app.callback(
-        Output("fragen-output", "children"),
-        Input("kategorie-dropdown", "value")
-    )
-    def update_questions(kategorie):
-        return html.Div([
-            html.H2(kategorie),
-            html.Div([
-                html.Button(
-                    f,
-                    id={"type": "frage-button", "kategorie": kategorie, "index": str(i)},
-                    n_clicks=0,
-                    className="frage-btn"
-                )
-                for i, f in enumerate(FRAGEN[kategorie])
-            ])
-        ])
 
     @app.callback(
         Output("graph-output", "children"),
-        Input({"type": "frage-button", "kategorie": ALL, "index": ALL}, "n_clicks"),
         Input("date-picker", "start_date"),
         Input("date-picker", "end_date"),
     )
-    def display_graph(n_clicks_list, start_date, end_date):
+    def display_graph(start_date, end_date):
         global _last_button
         ctx = dash.callback_context
-        if not ctx.triggered:
-            return "Bitte wähle eine Frage."
-
         triggered_id_str = ctx.triggered[0]["prop_id"].split(".")[0]
-        
-        if triggered_id_str.startswith("{"):
-            button_id = json.loads(triggered_id_str)
-            _last_button = button_id
-        elif triggered_id_str == "date-picker":
-            if not _last_button:
-                return "Bitte wähle zuerst eine Frage."
-            button_id = _last_button
-        else:
-            return "Unbekannter Trigger"
 
-        kategorie = button_id["kategorie"]
-        index = int(button_id["index"])
-        frage = FRAGEN[kategorie][index]
 
-        # Hier eleganter Routing-Switch
-        if kategorie == "Kundenverhalten und Zielgruppenanalyse":
-            return html.Div([
-                # Erste Zeile
-                html.Div([
-                    dcc.Graph(id="density-graph", figure=plots.density_plot(start=start_date, end=end_date)),
-                    dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date))
-                ], className="row-container"),
 
-                # Zweite Zeile
-                html.Div([
-                    dcc.Graph(id="country-distribution", figure=plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)),
-                    dcc.Graph(id="country-sunburst", figure=plots.sunburst_plot(["continent", "country"], start=start_date, end=end_date))
-                ], className="row-container"),
+        return html.Div([
+            # Erste Zeile
+            html.Div([
+                dcc.Graph(id="density-graph", figure=plots.density_plot(start=start_date, end=end_date)),
+                dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date))
+            ], className="row-container"),
 
-                # Dritte Zeile
-                html.Div([
-                    dcc.Graph(id="germany-distribution", figure=plots.germany_map_plot(["country", "city"], start=start_date, end=end_date)),
-                    dcc.Graph(id="germany-sunburst", figure=plots.sunburst_plot(["country", "city"], start=start_date, end=end_date, country_list=["Deutschland"], limit=1))
-                ], className="row-container"),
+            # Zweite Zeile
+            html.Div([
+                dcc.Graph(id="country-distribution", figure=plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)),
+                dcc.Graph(id="country-sunburst", figure=plots.sunburst_plot(["continent", "country"], start=start_date, end=end_date))
+            ], className="row-container"),
 
-                # Letztes Diagramm (volle Breite)
-                html.Div([
-                    dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date))
-                ], className="row-container")
-            ])
-        else:
-            return html.Div(f"Noch kein Plot für: {frage}")
+            # Dritte Zeile
+            html.Div([
+                dcc.Graph(id="germany-distribution", figure=plots.germany_map_plot(["country", "city"], start=start_date, end=end_date)),
+                dcc.Graph(id="germany-sunburst", figure=plots.sunburst_plot(["country", "city"], start=start_date, end=end_date, country_list=["Deutschland"], limit=1))
+            ], className="row-container"),
+
+            # Letztes Diagramm (volle Breite)
+            html.Div([
+                dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date))
+            ], className="row-container")
+        ])
+       
 
 
     @app.callback(
