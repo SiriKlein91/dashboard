@@ -48,29 +48,13 @@ body {
 /* Hauptcontainer */
 .main-container {
     display: flex;
-    flex-direction: row;
+    flex-direction: column; /* Spalten-Layout innen erledigen wir über .row-container */
     gap: 20px;
     padding: 20px 40px;
-    flex-wrap: wrap; /* wichtig für responsive Layout auf kleinen Bildschirmen */
+    width: 100%; /* unbedingt volle Breite */
+    box-sizing: border-box;
 }
 
-/* Linke Spalte */
-.left-column {
-    flex: 1; 
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-width: 300px; /* sorgt dafür, dass die Spalte nicht zu klein wird */
-}
-
-/* Rechte Spalte */
-.right-column {
-    flex: 5; 
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-width: 300px;
-}
 
 
 
@@ -108,28 +92,8 @@ body {
 }
 
 
-/* Keine Media Query – sie sollen NIE umbrechen */
 
 
-/* Buttons für Fragenliste */
-.frage-btn {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 12px;
-    margin: 6px 0;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    background: #eeeeee;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-.frage-btn:hover {
-    background: #ff6600;
-    color: white;
-}
 
 /* Responsive Anpassungen für kleinere Bildschirme */
 @media (max-width: 1024px) {

@@ -43,7 +43,7 @@ plots = PlotService(analytics)
 
 
 app = dash.Dash(__name__)
-app.layout = create_layout()
+app.layout = create_layout(plots)
 
 # Callbacks registrieren
 callbacks.register_callbacks(app, plots)
