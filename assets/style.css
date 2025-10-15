@@ -1,8 +1,8 @@
 /* Grundlegende Schrift und Hintergrund */
 body {
-    background-color: #ffffff;  /* Weißer Hintergrund */
-    font-family: "Montserrat", "Arial", sans-serif; /* moderne serifenlose Schrift */
-    color: #333333; /* dunkles Grau für Text */
+    background-color: #ffffff;  
+    font-family: "Montserrat", "Arial", sans-serif; 
+    color: #333333; 
     margin: 0;
     padding: 0;
 }
@@ -11,25 +11,22 @@ body {
 .header {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Links und rechts verteilen */
-    background-color: #1d242d; /* sehr dunkles Grau/Schwarz */
+    justify-content: space-between; 
+    background-color: #1d242d; 
     color: #ffffff;
     padding: 20px 40px;
-    margin: 0px 0px 20px 0px ;
+    margin-bottom: 20px;
 }
-
-
-
 
 .header img {
     height: 60px;
-    margin-right: 25px;}
-
+    margin-right: 25px;
+}
 
 .header-left {
     display: flex;
     align-items: center;
-    gap: 20px; /* Abstand zwischen Logo und Titel */
+    gap: 20px; 
 }
 
 .header-left img {
@@ -45,40 +42,76 @@ body {
 
 .header-right {
     font-size: 16px;
-    color: #cccccc; /* etwas heller als Titel */
+    color: #cccccc; 
 }
 
-
-/* Hauptcontainer in 2 Spalten */
+/* Hauptcontainer */
 .main-container {
     display: flex;
     flex-direction: row;
     gap: 20px;
     padding: 20px 40px;
+    flex-wrap: wrap; /* wichtig für responsive Layout auf kleinen Bildschirmen */
 }
 
 /* Linke Spalte */
 .left-column {
-    flex: 1; /* nimmt 1 Teil Platz */
+    flex: 1; 
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 300px; /* sorgt dafür, dass die Spalte nicht zu klein wird */
 }
 
 /* Rechte Spalte */
 .right-column {
-    flex: 2; /* nimmt doppelt so viel Platz wie links */
+    flex: 5; 
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 300px;
 }
 
-/* Kartenstyle beibehalten */
-.card {
+
+
+/* Zeile mit zwei fix nebeneinanderstehenden Grafiken */
+.row-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 25px;
+    margin-bottom: 25px;
+    flex-wrap: nowrap; /* verhindert, dass sie umbrechen */
+}
+
+/* Linke Karte (größer) */
+.row-container > .dash-graph:first-child,
+.row-container > div:first-child {
+    flex: 3;
+    max-width: 75%;
+}
+
+/* Rechte Karte (kleiner) */
+.row-container > .dash-graph:last-child,
+.row-container > div:last-child {
+    flex: 1;
+    max-width: 25%;
+}
+
+/* Kartenoptik beibehalten */
+.row-container .card {
     background: #f9f9f9;
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* Fragenliste als Buttons untereinander */
+
+/* Keine Media Query – sie sollen NIE umbrechen */
+
+
+/* Buttons für Fragenliste */
 .frage-btn {
     display: block;
     width: 100%;
@@ -90,11 +123,33 @@ body {
     border-radius: 6px;
     background: #eeeeee;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .frage-btn:hover {
     background: #ff6600;
     color: white;
 }
+
+/* Responsive Anpassungen für kleinere Bildschirme */
+@media (max-width: 1024px) {
+    .main-container {
+        flex-direction: column;
+        padding: 10px 20px;
+    }
+
+    .row-container {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 600px) {
+    .header-left h1 {
+        font-size: 22px;
+    }
+    .header img {
+        height: 50px;
+    }
+}
+
 

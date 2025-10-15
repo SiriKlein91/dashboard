@@ -62,14 +62,33 @@ def register_callbacks(app, plots: PlotService):
         # Hier eleganter Routing-Switch
         if kategorie == "Kundenverhalten und Zielgruppenanalyse":
             return html.Div([
-                dcc.Graph(id="density-graph", figure=plots.density_plot(start=start_date, end=end_date)),
-                dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date)),
-                dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date)),
-                dcc.Graph(id="country-distribution", figure=plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)),
+                # Erste Zeile
+                html.Div([
+                    dcc.Graph(id="density-graph", figure=plots.density_plot(start=start_date, end=end_date)),
+                    dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date))
+                ], className="row-container"),
+
+                # Zweite Zeile
+                html.Div([
+                    dcc.Graph(id="country-distribution", figure=plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)),
+                    dcc.Graph(id="country-sunburst", figure=plots.sunburst_plot(["continent", "country"], start=start_date, end=end_date))
+                ], className="row-container"),
+
+                # Dritte Zeile
+                html.Div([
+                    dcc.Graph(id="germany-distribution", figure=plots.germany_map_plot(["country", "city"], start=start_date, end=end_date)),
+                    dcc.Graph(id="germany-sunburst", figure=plots.sunburst_plot(["country", "city"], start=start_date, end=end_date, country_list=["Deutschland"], limit=1))
+                ], className="row-container"),
+
+                # Letztes Diagramm (volle Breite)
+                html.Div([
+                    dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date))
+                ], className="row-container")
             ])
         else:
             return html.Div(f"Noch kein Plot für: {frage}")
-        
+
+
     @app.callback(
         Output("age-distribution", "figure"),
         Output("admission-distribution", "figure"),
@@ -92,6 +111,7 @@ def register_callbacks(app, plots: PlotService):
         hist = plots.age_histogram(start=start_date, end=end_date, plz_list=plz_list)
         sunburst = plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date, plz_list=plz_list)
         map = plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)
+        germany_map = plots.germany_map_plot(["country", "city"], start=start_date, end=end_date)
 
         return hist, sunburst, map
 
