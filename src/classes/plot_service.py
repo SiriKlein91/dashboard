@@ -16,8 +16,7 @@ class PlotService:
 
 
     def density_plot(self, start=None, end=None):
-        LINE_COLORS = px.colors.qualitative.Dark24  # 24 verschiedene Farben
-        color_cycle = itertools.cycle(LINE_COLORS)
+        
         # PLZ-Daten für Choropleth
         df = self.analytics.plz_geo_summary(start, end)
 
@@ -30,28 +29,43 @@ class PlotService:
             hover_name="plz",
             hover_data=["mean_age"],
             mapbox_style="carto-positron",
-            zoom=11,
+            zoom=10,
             center={"lat": 52.52, "lon": 13.405},
-            opacity=0.6
+            opacity=0.6,
+            color_continuous_scale="Greys"
         )
 
+
+        colors = {
+            "U1": "#A6CE39",  # RAL 6018 Gelbgrün
+            "U2": "#D2232A",  # RAL 2002 Blutorange
+            "U3": "#00887C",  # RAL 6016 Türkisgrün
+            "U4": "#FFD100",  # RAL 1023 Verkehrsgelb
+            "U5": "#6E4B3A",  # RAL 8007 Rehbraun
+            "U6": "#8B00A1",  # RAL 4005 Blaulila
+            "U7": "#0096D6",   # RAL 5012 Lichtblau
+            "U8": "#00529F",  # RAL 5010 Enzianblau
+            "U9": "#FFB367"   # RAL 2003 Pastellorange
+        }
+
+        for line_name, color in colors.items():
+            for feature in GDF_SUBWAY_EDGES["features"]:
+                if feature["properties"].get("name") == line_name:
+                    coords = feature["geometry"]["coordinates"]
+                    fig.add_trace(go.Scattermapbox(
+                        lon=[c[0] for c in coords],
+                        lat=[c[1] for c in coords],
+                        mode="lines",
+                        line=dict(color=color, width=3),
+                        name=line_name,
+                        showlegend=False,  # Optional, damit Linie nur einmal im Legendeneintrag auftaucht
+                        hoverinfo="skip" 
+                    ))
         fig.update_layout(
-            mapbox = {
-                "style": "carto-positron",
-                "layers": [
-                    {
-                        "sourcetype": "geojson",
-                        "source": GDF_SUBWAY_EDGES,
-                        "type": "line",
-                        "color": "red",
-                        "line": {"width": 2},
-                    }
-                ],
-                "center": {"lat": 52.52, "lon": 13.405},
-                "zoom": 11,
-            }
+            height=600,   # Höhe erhöhen
+            width=700,    # Breite etwas schmaler
+            margin={"r":0,"t":0,"l":0,"b":0}  # Ränder auf 0, damit Karte maximal Platz nutzt
         )
-
         return fig
 
 

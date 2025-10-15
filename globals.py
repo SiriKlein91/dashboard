@@ -21,8 +21,8 @@ GDF['plz'] = GDF['plz'].astype(str)
 # Nodes einlesen
 
 # Edges einlesen
-GDF_SUBWAY_EDGES = gpd.read_file("data/berlin_subway.geojson")
-GDF_SUBWAY_EDGES = json.loads(GDF_SUBWAY_EDGES.to_json())
+with open("data/berlin_subway.geojson") as f:
+    GDF_SUBWAY_EDGES = json.load(f)
 
 # City-Dictionary
 with open(CITY_PATH, "r", encoding="utf-8") as f:
