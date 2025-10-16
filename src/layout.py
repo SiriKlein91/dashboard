@@ -1,9 +1,8 @@
 #import dash
-from dash import dcc, html, Input, Output
-from dash.dependencies import ALL
+from dash import dcc, html
 import json
 from src.classes.plot_service import PlotService
-
+from globals import UBAHN_COLOR_COORDS
 
 # Fragen aus JSON laden
 with open("data/questions.json", "r", encoding="utf-8") as f:
@@ -26,7 +25,10 @@ def create_layout(plots: PlotService):
             ], className="header-right")
         ], className="header"),
 
-        # Hauptcontainer mit 2 Spalten
+
+        
+
+
         html.Div([               
                 html.Div([
                     dcc.DatePickerRange(
@@ -39,22 +41,24 @@ def create_layout(plots: PlotService):
             # Erste Zeile
                     html.Div([
                         dcc.Graph(id="berlin-graph", figure=plots.density_plot(start=start_date, end=end_date)),
+                        html.Div([
+                            dcc.Checklist(
+                                id="subway-checklist-id",
+                                options=[
+                                    {"label": html.Div(
+                                        [name],
+                                        style={"color": color[0], "font-size": 20}
+                                    ), "value": name}
+                                    for name, color in UBAHN_COLOR_COORDS.items()
+                                ],
+                                value=[],  # oder z. B. ["U1"]
+                                labelStyle={"display": "flex", "align-items": "center"}
+                            ),
+                        ], className="subway-checklist"), 
                         dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date))
                     ], className="row-container"),
 
-                    # Zweite Zeile
-                    html.Div([
-                        dcc.Graph(id="world-graph", figure=plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)),
-                        dcc.Graph(id="world-distribution", figure=plots.sunburst_plot(["continent", "country"], start=start_date, end=end_date))
-                    ], className="row-container"),
 
-                    # Dritte Zeile
-                    html.Div([
-                        dcc.Graph(id="germany-graph", figure=plots.germany_map_plot(["country", "city"], start=start_date, end=end_date)),
-                        dcc.Graph(id="germany-distribution", figure=plots.sunburst_plot(["country", "city"], start=start_date, end=end_date, country_list=["Deutschland"], limit=1))
-                    ], className="row-container"),
-
-                    # Letztes Diagramm (volle Breite)
                     html.Div([
                         dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date))
                     ], className="row-container")

@@ -1,24 +1,51 @@
-from dash import html, dcc, Input, Output
-from dash.dependencies import ALL
-import json
+from dash import html, Input, Output, State
 from src.classes.plot_service import PlotService
-
-#Glabale Button Variable
-_last_button = None
-
-
+from globals import UBAHN_COLOR_COORDS
+import plotly.graph_objects as go
 
 
 def register_callbacks(app, plots: PlotService):
-       
+
+    @app.callback(
+        Output("berlin-graph", "figure"),
+        Input("subway-checklist-id", "value"),
+        State("berlin-graph", "figure")
+    )
+
+    def update_berlin_map(selected, current_fig):
+        
+        
+        if current_fig:
+            fig = go.Figure(current_fig)
+            if fig.data:
+                fig.data = [trace for trace in fig.data if trace.name not in UBAHN_COLOR_COORDS.keys() or trace.name in (selected or [])]
+
+        else: 
+            start_date="2024-01-01"
+            end_date="2024-12-31" 
+            fig=plots.density_plot(start=start_date, end=end_date)
+        
+        if selected:
+            print(selected)
+            for ubahn in selected:
+                for line, properties in UBAHN_COLOR_COORDS.items():
+                    if line == ubahn:
+                        for coords in properties[1]:
+                            fig.add_trace(go.Scattermapbox(
+                                lon=[c[0] for c in coords],
+                                lat=[c[1] for c in coords],
+                                mode="lines",
+                                line=dict(color=properties[0], width=3),
+                                name=ubahn,
+                                showlegend=False,  # Optional, damit Linie nur einmal im Legendeneintrag auftaucht
+                                hoverinfo="skip" 
+                                            ))
+        return fig    
+      
     @app.callback(
         Output("berlin-graph", "clickData"),
         Output("age-distribution", "figure"),
         Output("admission-distribution", "figure"),
-        Output("world-graph", "figure"),
-        Output("germany-graph", "figure"),
-        Output("world-distribution", "figure"),
-        Output("germany-distribution", "figure"),
         Input("berlin-graph", "clickData"),
         Input("berlin-graph", "selectedData"),
         Input("date-picker", "start_date"),
@@ -37,12 +64,9 @@ def register_callbacks(app, plots: PlotService):
         berlin_map = plots.density_plot(start=start_date, end=end_date)
         hist = plots.age_histogram(start=start_date, end=end_date, plz_list=plz_list)
         admission = plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date, plz_list=plz_list)
-        world_map = plots.map_plot(["continent", "country", "city"], start=start_date, end=end_date)
-        germany_map = plots.germany_map_plot(["country", "city"], start=start_date, end=end_date)
         world_dist = plots.sunburst_plot(["continent", "country"], start=start_date, end=end_date)
-        germany_dist = plots.sunburst_plot(["country", "city"], start=start_date, end=end_date, country_list=["Deutschland"], limit=1)
 
-        return berlin_map, hist, admission, world_map, germany_map,world_dist, germany_dist 
+        return berlin_map, hist, admission, 
 
     
 

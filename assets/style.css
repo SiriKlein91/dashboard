@@ -90,7 +90,11 @@ body {
 }
 
 
-
+.subway-checklist {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
 
 
 /* Responsive Anpassungen für kleinere Bildschirme */
