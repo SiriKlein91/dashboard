@@ -26,20 +26,19 @@ def register_callbacks(app, plots: PlotService):
             fig=plots.density_plot(start=start_date, end=end_date)
         
         if selected:
-            print(selected)
             for ubahn in selected:
-                for line, properties in UBAHN_COLOR_COORDS.items():
-                    if line == ubahn:
-                        for coords in properties[1]:
-                            fig.add_trace(go.Scattermapbox(
-                                lon=[c[0] for c in coords],
-                                lat=[c[1] for c in coords],
-                                mode="lines",
-                                line=dict(color=properties[0], width=3),
-                                name=ubahn,
-                                showlegend=False,  # Optional, damit Linie nur einmal im Legendeneintrag auftaucht
-                                hoverinfo="skip" 
-                                            ))
+                color = UBAHN_COLOR_COORDS[ubahn][0]
+                lon = UBAHN_COLOR_COORDS[ubahn][1]
+                lat = UBAHN_COLOR_COORDS[ubahn][2]
+                fig.add_trace(go.Scattermapbox(
+                    lon=lon,
+                    lat=lat,
+                    mode="lines",
+                    line=dict(color=color, width=3),
+                    name=ubahn,
+                    showlegend=False,
+                    hoverinfo="skip"
+                ))
         return fig    
       
     @app.callback(
