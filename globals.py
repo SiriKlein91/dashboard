@@ -1,5 +1,6 @@
 import json
 import geopandas as gpd
+import pandas as pd
 
 # ----------------------
 # Pfade zu Dateien
@@ -11,6 +12,8 @@ SHAPEFILE_GERMANY_PATH = "data/2_hoch.geo.json"
 PLZ_PATH = "data/plz_coords.csv"
 SHAPEFILE_BERLIN_PATH = "data/berlin_plz_shapefile/plz.shp"
 QUESTION_PATH = "data/questions.json"
+BOULDERGYM_PATH = "data/Bouldergyms.json"
+SUBWAY_PATH = "data/ubahn_colors_lan_lat.json"
 
 
 
@@ -18,11 +21,17 @@ QUESTION_PATH = "data/questions.json"
 GDF = gpd.read_file(SHAPEFILE_BERLIN_PATH)
 GDF['plz'] = GDF['plz'].astype(str)
 
-# Nodes einlesen
+GERMAN_PLZ = pd.read_csv(PLZ_PATH)
+GERMAN_PLZ['plz'] = GERMAN_PLZ['plz'].astype(str)
 
 # Edges einlesen
-with open("data/ubahn_colors_lan_lat.json") as f:
+with open(SUBWAY_PATH) as f:
     UBAHN_COLOR_COORDS = json.load(f)
+
+# Edges einlesen
+with open(BOULDERGYM_PATH) as f:
+    BOULDERGYMS = json.load(f)
+
 
 # City-Dictionary
 with open(CITY_PATH, "r", encoding="utf-8") as f:

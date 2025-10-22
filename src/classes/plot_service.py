@@ -3,7 +3,7 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from globals import DE_STATES, CITY_DIC
+from globals import DE_STATES, CITY_DIC, BOULDERGYMS
 
 
 
@@ -25,14 +25,38 @@ class PlotService:
             geojson=df.geometry,
             locations=df.index,
             color="count",
-            hover_name="plz",
+            hover_name="name",
             hover_data=["mean_age"],
             mapbox_style="carto-positron",
             zoom=10,
             center={"lat": 52.52, "lon": 13.405},
             opacity=0.6,
-            color_continuous_scale="Greys"
+            color_continuous_scale=px.colors.sequential.Greys
         )
+
+        # Hover-Template anpassen
+        fig.update_traces(
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"  # Name
+                "Anzahl Kunden: %{customdata[1]}<br>"
+                "Anteil an Gesamtkunden: %{customdata[3]:.1f}%<br>"
+                "Durchschnittsalter: %{customdata[2]}<extra></extra>"
+            ),
+            customdata=df[["name", "count", "mean_age_rounded", "share", "plz"]].values
+        )
+
+        for gym, coords in BOULDERGYMS.items():
+            fig.add_trace(go.Scattermapbox(
+                    lon=[coords[0]],
+                    lat=[coords[1]],
+                    mode="markers",
+                    name=gym,
+                    marker=dict(size=20, color="red", symbol="circle"),
+                    showlegend=False,
+                    hoverinfo="text",
+                    text = [gym]
+                )
+            )
 
         fig.update_layout(
             height=600,   # Höhe erhöhen

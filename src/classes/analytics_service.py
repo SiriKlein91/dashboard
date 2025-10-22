@@ -1,7 +1,7 @@
 import pandas as pd
 from src.classes.customer_data import CustomerDataFrame
 from src.classes.entry_data import EntryDataFrame
-from globals import GDF
+from globals import GDF, GERMAN_PLZ
 
 class AnalyticsService:
     def __init__(self, customers: CustomerDataFrame, entries: EntryDataFrame):
@@ -73,11 +73,15 @@ class AnalyticsService:
         für den gewünschten Zeitraum.
         """
         df = self.filter_data(start, end)
+        df = df.merge(GERMAN_PLZ[["plz", "name"]], on="plz", how="left")
         # Aggregation: Kunden/Eintritte pro PLZ
-        summary = df.groupby("plz").agg(
+        summary = df.groupby(["plz", "name"]).agg(
             count=("entry_id", "size"),
             mean_age=("age", "mean")
         ).reset_index()
+        summary["mean_age_rounded"] = summary["mean_age"].round(1)  # Durchschnittsalter runden
+        total_customer = summary["count"].sum()        # Gesamtkunden
+        summary["share"] = summary["count"] / total_customer* 100 
     
         # PLZ-Koordinaten und Shapefile joinen
         #df_plz = pd.read_csv(plz_csv)
