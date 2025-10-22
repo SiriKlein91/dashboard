@@ -32,8 +32,5 @@ with open(CITY_PATH, "r", encoding="utf-8") as f:
 with open(SHAPEFILE_GERMANY_PATH, "r", encoding="utf-8") as f:
     DE_STATES = json.load(f)
 
-# Fragen
-with open(QUESTION_PATH, "r", encoding="utf-8") as f:
-    FRAGEN = json.load(f)
 
 
