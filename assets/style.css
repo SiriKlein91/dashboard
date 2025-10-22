@@ -1,121 +1,108 @@
-/* Grundlegende Schrift und Hintergrund */
-body {
-    background-color: #ffffff;  
-    font-family: "Montserrat", "Arial", sans-serif; 
-    color: #333333; 
-    margin: 0;
-    padding: 0;
-}
-
-/* Header mit Logo und Titel */
+/* Header & Footer kompakter */
 .header {
     display: flex;
     align-items: center;
-    justify-content: space-between; 
-    background-color: #1d242d; 
+    justify-content: space-between;
+    background-color: #1d242d;
     color: #ffffff;
-    padding: 20px 40px;
-    margin-bottom: 20px;
-}
-
-.header img {
-    height: 60px;
-    margin-right: 25px;
-}
-
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 20px; 
+    padding: 10px 20px;  /* weniger Platz als vorher */
 }
 
 .header-left img {
-    height: 60px;
+    height: 40px; 
 }
-
 .header-left h1 {
+    font-size: 20px; 
     margin: 0;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: 1px;
 }
-
 .header-right {
-    font-size: 16px;
-    color: #cccccc; 
+    font-size: 14px; 
+    color: #cccccc;
 }
 
-/* Hauptcontainer */
+footer {
+    text-align: center;
+    padding: 5px 0;
+    font-size: 12px;
+    background: #1d242d;
+    color: #fff;
+}
+
+/* Hauptcontainer dreispaltig */
 .main-container {
     display: flex;
-    flex-direction: column; /* Spalten-Layout innen erledigen wir über .row-container */
+    flex-direction: row;
     gap: 20px;
-    padding: 20px 40px;
-    width: 100%; /* unbedingt volle Breite */
+    padding: 10px 20px;
+    width: 100%;
     box-sizing: border-box;
 }
 
-
-/* Zeile mit zwei fix nebeneinanderstehenden Grafiken */
-.row-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: stretch;
-    gap: 25px;
-    margin-bottom: 25px;
-    flex-wrap: nowrap; /* verhindert, dass sie umbrechen */
-}
-
-/* Linke Karte (größer) */
-.row-container > .dash-graph:first-child,
-.row-container > div:first-child {
-    flex: 2;
-    max-width: 66%;
-}
-
-/* Rechte Karte (kleiner) */
-.row-container > .dash-graph:last-child,
-.row-container > div:last-child {
+/* Jede Spalte gleich groß */
+.column {
     flex: 1;
-    max-width: 33%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-/* Kartenoptik beibehalten */
-.row-container .card {
-    background: #f9f9f9;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+/* Linke Spalte: Karte + Datum + Checkliste */
+.left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-
+/* Subway-Checklist horizontal unter der Karte */
 .subway-checklist {
     display: flex;
-    align-items: center;
-    margin-bottom: 10px;
+    flex-wrap: wrap;        /* springt in nächste Zeile, wenn nicht genug Platz */
+    gap: 15px;              /* Abstand zwischen den Items */
+    margin-top: 10px;
 }
 
+/* Einzelne Items der Checklist */
+.subway-checklist .dash-checklist label {
+    display: flex;          
+    align-items: center;
+    font-size: 16px;
+    cursor: pointer;        
+}
 
-/* Responsive Anpassungen für kleinere Bildschirme */
+/* Optional: Abstand zwischen Checkbox und Text */
+.subway-checklist .dash-checklist label input {
+    margin-right: 5px;
+}
+
+/* Mittlere Spalte: zwei Grafiken */
+.middle-column {
+    flex: 1;
+}
+
+/* Rechte Spalte: Platzhalter */
+.right-column {
+    flex: 1;
+}
+
+.placeholder-card {
+    background: #f0f0f0;
+    border-radius: 10px;
+    height: 45%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Responsive Anpassungen */
 @media (max-width: 1024px) {
     .main-container {
-        flex-direction: column;
-        padding: 10px 20px;
-    }
-
-    .row-container {
         flex-direction: column;
     }
 }
 
 @media (max-width: 600px) {
     .header-left h1 {
-        font-size: 22px;
+        font-size: 16px;
     }
-    .header img {
-        height: 50px;
+    .header-left img {
+        height: 30px;
     }
 }
-
-

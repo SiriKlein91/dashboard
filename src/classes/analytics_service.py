@@ -2,6 +2,9 @@ import pandas as pd
 from src.classes.customer_data import CustomerDataFrame
 from src.classes.entry_data import EntryDataFrame
 from globals import GDF, GERMAN_PLZ
+from pandas.api.types import CategoricalDtype
+import numpy as np
+
 
 class AnalyticsService:
     def __init__(self, customers: CustomerDataFrame, entries: EntryDataFrame):
@@ -46,21 +49,56 @@ class AnalyticsService:
         )
 
     
-    def create_bins(self, start = None, end = None, plz_list = None, country_list = None, dist=5):
-        from pandas.api.types import CategoricalDtype
-        import numpy as np
-        df=self.filter_data(start, end, plz_list, country_list)
-        arr = np.arange (20,60,dist)
-        bins = [5,10, 15] + arr.tolist() + [100]
+    def create_bins(self, start=None, end=None, plz_list=None, country_list=None, dist=5):
+
+        df = self.filter_data(start, end, plz_list, country_list)
+
+        # Altersklassen definieren
+        arr = np.arange(20, 60, dist)
+        bins = [5, 10, 15] + arr.tolist() + [100]
         labels = ["5-10", "11-15", "15-20"]
         for a, b in zip(arr, arr[1:]):
             labels.append(f"{a+1}-{b}")
         labels.append("60+")
+
         cat_type = CategoricalDtype(categories=labels, ordered=True)
         df["age_category"] = pd.cut(df["age"], bins=bins, labels=labels, right=True)
         df["age_category"] = df["age_category"].astype(cat_type)
-    
-        return(df)
+        df["origin"] = np.where(df["city"] == "Berlin", "Berlin", "Tourist")
+        
+
+        # Gruppieren nach Altersklasse, Geschlecht und Herkunft
+        grouped = (
+            df.groupby(["age_category", "gender", "origin"], observed=False)
+            .size()
+            .reindex(
+                pd.MultiIndex.from_product([labels, df["gender"].unique(), ["Berlin", "Tourist"]],
+                                        names=["age_category", "gender", "origin"]),
+                fill_value=0
+            )
+            .rename("count")
+            .reset_index()
+        )
+
+        # Prozentwerte pro Geschlecht
+        #grouped["percent"] = grouped.groupby("gender", observed=False)["count"].transform(lambda x: (x / x.sum()) * 100).round(1)
+        total_count = grouped["count"].sum()
+        grouped["percent"] = (grouped["count"] / total_count * 100).round(1)
+        # Gesamtverteilung nach Geschlecht
+        gender_total = grouped.groupby("gender", observed=False)["count"].sum()
+        total_sum = gender_total.sum()
+        grouped["gender_total_percent"] = grouped["gender"].map(
+            (gender_total / total_sum * 100).round(1)
+        )
+
+        grouped["age_category"] = pd.Categorical(
+        grouped["age_category"],
+        categories=df["age_category"].cat.categories,
+        ordered=True
+)
+
+        return grouped
+
     
     def proportion(self,group_list, start=None, end=None, plz_list = None, country_list = None):
         df = self.filter_data(start, end, plz_list, country_list)

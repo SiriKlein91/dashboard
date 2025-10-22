@@ -69,41 +69,83 @@ class PlotService:
 
 
     
-    def age_histogram(self, start= None, end= None, plz_list= None, country_list = None, dist= 5):
-        df = self.analytics.create_bins(start, end, plz_list, country_list, dist)
-        categories = df["age_category"].cat.categories
+    def age_histogram(self, start=None, end=None, plz_list=None, country_list=None, dist=5):
+    # Farben
+        color_map = {
+            "Berlin": "#33cc33",
+            "Tourist": "#ff3399"
+        }
+        gender_labels = {"m": "Männlich", "w": "Weiblich", "d": "Divers"}
 
-        # Gruppieren und fehlende Kategorien auffüllen
-        df_plot = (
-        df.groupby(["age_category", "gender"], observed=False)
-        .size()
-        .unstack(fill_value=0)                # fehlende gender/category-Kombis = 0
-        .reindex(categories, fill_value=0)    # alle Alterskategorien sichtbar
-        .stack()
-        .rename_axis(index=["age_category", "gender"])
-        .reset_index(name="count")
-        )
-        df_plot["age_category"] = pd.Categorical(
-            df_plot["age_category"],
-            categories=categories,
-            ordered=True
-        )
+        # Daten vorbereiten
+        df_plot = self.analytics.create_bins(start, end, plz_list, country_list, dist)
+        categories = df_plot["age_category"].cat.categories
+
+        # Gesamtverteilung nach Geschlecht
+        gender_share = df_plot.groupby("gender", observed=False)["count"].sum().reset_index()
+        gender_share["percent"] = (gender_share["count"] / gender_share["count"].sum() * 100).round(1)
+        gender_text = "<br>".join([f"{row.gender}: {row.percent:.1f} %" for _, row in gender_share.iterrows()])
+
+        # Gesamtverteilung nach Herkunft
+        origin_share = df_plot.groupby("origin", observed=False)["count"].sum().reset_index()
+        origin_share["percent"] = (origin_share["count"] / origin_share["count"].sum() * 100).round(1)
+        # Mit Farbsymbolen
+        origin_text = "<br>".join([f'<span style="color:{color_map[row.origin]};">■</span> {row.origin}: {row.percent:.1f} %'
+                                for _, row in origin_share.iterrows()])
+
+        # Plot
         fig = px.bar(
             df_plot,
-            x= "age_category",
-            y="count",
-            color="gender",
-            category_orders={"age_category": df["age_category"].cat.categories},
-            color_discrete_sequence=["#33ffdd", "#ff00ff", "#ffee00"]
-        )
-        fig.update_layout(
-            title="Altersverteilung",
-            xaxis_title="Altersgruppen",
-            yaxis_title="Anzahl Personen",
-            template="plotly_white"  # clean look
+            x="age_category",
+            y="percent",
+            color="origin",               # stacked nach Herkunft
+            facet_col="gender",           # drei Balken nebeneinander für m/w/d
+            category_orders={"age_category": categories, "gender": ["m", "w", "d"]},
+            color_discrete_map=color_map,
+            barmode="stack",
+            custom_data=["gender", "origin"]  # für Hovertext
         )
 
+        # Hovertext anpassen
+        fig.update_traces(
+            hovertemplate=
+            "Geschlecht: %{customdata[0]}<br>" +
+            "Altersklasse: %{x}<br>" +
+            "Anteil an Gesamtkunden: %{y:.1f}%<br>" +
+            "Herkunft: %{customdata[1]}"
+        )
+            
+        
+
+        
+
+        fig.update_layout(
+            title="Altersverteilung nach Geschlecht und Herkunft",
+            xaxis_title="Altersgruppen",
+            yaxis_title="Prozent der Gesamtpersonen",
+            template="plotly_white",
+            showlegend=False,  # Legende ausblenden
+            annotations=[
+                dict(
+                    text=f"<b>Gesamtverteilung Geschlecht:</b><br>{gender_text}<br><b>Gesamtverteilung Herkunft:</b><br>{origin_text}",
+                    xref="paper", yref="paper",
+                    x=0.98, y=0.95,        # rechts oben
+                    xanchor="right", yanchor="top",
+                    showarrow=False,
+                    bordercolor="gray",
+                    borderwidth=1,
+                    bgcolor="white",
+                    font=dict(size=12),
+                    align="left"            # Text weiterhin linksbündig innerhalb des Fensters
+                )
+            ]
+        )
+        fig.layout.xaxis.title.text = "Männlich"
+        fig.layout.xaxis2.title.text = "Weiblich"
+        fig.layout.xaxis3.title.text = "Divers"
         return fig
+
+
     
     def sunburst_plot(self,group_list, start=None, end= None, plz_list = None, country_list = None, limit = None):
         df= self.analytics.proportion(group_list, start, end, plz_list, country_list)
