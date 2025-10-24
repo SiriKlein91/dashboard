@@ -12,6 +12,7 @@ class AnalyticsService:
         self.entries = entries.df
         # Mergen nach customer_id für Analysen
         self.merged = self.entries.merge(self.customers, on="customer_id", how="left").drop(columns=["admission_y"]).rename(columns={"admission_x": "admission"})
+        self.total_count = self.merged.shape[0]
 
     def __repr__(self):
         # Wenn die Instanz in der Konsole angezeigt wird
@@ -82,8 +83,8 @@ class AnalyticsService:
 
         # Prozentwerte pro Geschlecht
         #grouped["percent"] = grouped.groupby("gender", observed=False)["count"].transform(lambda x: (x / x.sum()) * 100).round(1)
-        total_count = grouped["count"].sum()
-        grouped["percent"] = (grouped["count"] / total_count * 100).round(1)
+        #total_count = grouped["count"].sum()
+        grouped["percent"] = (grouped["count"] / self.total_count * 100).round(1)
         # Gesamtverteilung nach Geschlecht
         gender_total = grouped.groupby("gender", observed=False)["count"].sum()
         total_sum = gender_total.sum()
@@ -95,9 +96,14 @@ class AnalyticsService:
         grouped["age_category"],
         categories=df["age_category"].cat.categories,
         ordered=True
-)
+        )
+        # Gesamtverteilung nach Geschlecht
+        gender_share = grouped.groupby("gender", observed=False)["count"].sum().reset_index()
+        gender_share["percent"] = (gender_share["count"] / gender_share["count"].sum() * 100).round(1)
 
-        return grouped
+        origin_share = grouped.groupby("origin", observed=False)["count"].sum().reset_index()
+        origin_share["percent"] = (origin_share["count"] / origin_share["count"].sum() * 100).round(1)
+        return grouped, gender_share, origin_share
 
     
     def proportion(self,group_list, start=None, end=None, plz_list = None, country_list = None):
@@ -118,8 +124,7 @@ class AnalyticsService:
             mean_age=("age", "mean")
         ).reset_index()
         summary["mean_age_rounded"] = summary["mean_age"].round(1)  # Durchschnittsalter runden
-        total_customer = summary["count"].sum()        # Gesamtkunden
-        summary["share"] = summary["count"] / total_customer* 100 
+        summary["share"] = summary["count"] / self.total_count* 100 
     
         # PLZ-Koordinaten und Shapefile joinen
         #df_plz = pd.read_csv(plz_csv)

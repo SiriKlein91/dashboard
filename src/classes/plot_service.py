@@ -78,18 +78,9 @@ class PlotService:
         gender_labels = {"m": "Männlich", "w": "Weiblich", "d": "Divers"}
 
         # Daten vorbereiten
-        df_plot = self.analytics.create_bins(start, end, plz_list, country_list, dist)
+        df_plot, gender_share, origin_share = self.analytics.create_bins(start, end, plz_list, country_list, dist)
         categories = df_plot["age_category"].cat.categories
-
-        # Gesamtverteilung nach Geschlecht
-        gender_share = df_plot.groupby("gender", observed=False)["count"].sum().reset_index()
-        gender_share["percent"] = (gender_share["count"] / gender_share["count"].sum() * 100).round(1)
         gender_text = "<br>".join([f"{row.gender}: {row.percent:.1f} %" for _, row in gender_share.iterrows()])
-
-        # Gesamtverteilung nach Herkunft
-        origin_share = df_plot.groupby("origin", observed=False)["count"].sum().reset_index()
-        origin_share["percent"] = (origin_share["count"] / origin_share["count"].sum() * 100).round(1)
-        # Mit Farbsymbolen
         origin_text = "<br>".join([f'<span style="color:{color_map[row.origin]};">■</span> {row.origin}: {row.percent:.1f} %'
                                 for _, row in origin_share.iterrows()])
 
