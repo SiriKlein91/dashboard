@@ -22,8 +22,9 @@ class AnalyticsService:
         # Wenn print() aufgerufen wird
         return str(self.merged)
 
-    def filter_data(self, start=None, end=None, plz_list=None, country_list = None):
+    def filter_data(self, start=None, end=None, plz_list=None, country_list = None, admission_list = None):
         df = self.merged
+ 
         if start:
             df = df[df["time"] >= pd.to_datetime(start)]
         if end:
@@ -32,6 +33,8 @@ class AnalyticsService:
             df = df[df["plz"].isin(plz_list)]
         if country_list:
             df = df[df["country"].isin(country_list)]
+        if admission_list:
+            df = df[df["admission"].isin(admission_list)]
         return df
 
     def daily_visits(self, start=None, end=None, plz_list = None, country_list = None):
@@ -42,17 +45,17 @@ class AnalyticsService:
         df = self.filter_data(start, end, plz_list, country_list)
         return df.groupby(["admission", df["time"].dt.to_period("M")]).size().unstack(fill_value=0)
 
-    def plz_summary(self, start=None, end=None, plz_list = None, country_list = None):
-        df = self.filter_data(start, end, plz_list, country_list)
+    def plz_summary(self, start=None, end=None, plz_list = None, country_list = None, admission_list = None):
+        df = self.filter_data(start, end, plz_list, country_list, admission_list)
         return df.groupby("plz").agg(
             count=("entry_id", "size"),
             mean_age=("age", "mean")
         )
 
     
-    def create_bins(self, start=None, end=None, plz_list=None, country_list=None, dist=5):
+    def create_bins(self, start=None, end=None, plz_list=None, country_list=None, dist=5, admission_list = None):
 
-        df = self.filter_data(start, end, plz_list, country_list)
+        df = self.filter_data(start, end, plz_list, country_list, admission_list)
 
         # Altersklassen definieren
         arr = np.arange(20, 60, dist)
@@ -106,32 +109,34 @@ class AnalyticsService:
         return grouped, gender_share, origin_share
 
     
-    def proportion(self,group_list, start=None, end=None, plz_list = None, country_list = None):
-        df = self.filter_data(start, end, plz_list, country_list)
+    def proportion(self,group_list, start=None, end=None, plz_list = None, country_list = None, admission_list = None):
+        df = self.filter_data(start, end, plz_list, country_list, admission_list)
         df= df.groupby(group_list, observed=False).size().reset_index(name="count")
         return df
     
-    def plz_geo_summary(self, start=None, end=None):
-        """
-        Liefert ein GeoDataFrame mit count, mean_age, PLZ-Koordinaten
-        für den gewünschten Zeitraum.
-        """
-        df = self.filter_data(start, end)
+    def plz_geo_summary(self, start=None, end=None, admission_list=None):
+        df = self.filter_data(start=start, end=end, admission_list=admission_list)
         df = df.merge(GERMAN_PLZ[["plz", "name"]], on="plz", how="left")
-        # Aggregation: Kunden/Eintritte pro PLZ
         summary = df.groupby(["plz", "name"]).agg(
             count=("entry_id", "size"),
             mean_age=("age", "mean")
         ).reset_index()
-        summary["mean_age_rounded"] = summary["mean_age"].round(1)  # Durchschnittsalter runden
-        summary["share"] = summary["count"] / self.total_count* 100 
-    
-        # PLZ-Koordinaten und Shapefile joinen
-        #df_plz = pd.read_csv(plz_csv)
-        
-    
+
+        summary["mean_age_rounded"] = summary["mean_age"].round(1)
+        summary["share"] = summary["count"] / self.total_count * 100
+
+        # Sicherstellen, dass PLZ in beiden DataFrames den gleichen Typ haben
+        summary["plz"] = summary["plz"].astype(str)
+        GDF["plz"] = GDF["plz"].astype(str)
+
+        # Merge für Choropleth
         gdf_merged = GDF.merge(summary, left_on="plz", right_on="plz", how="left")
+    
+
+        # NaNs auffüllen, damit die Choropleth funktioniert
+        gdf_merged["count"] = gdf_merged["count"].fillna(0)
+        gdf_merged["mean_age_rounded"] = gdf_merged["mean_age_rounded"].fillna(0)
+        gdf_merged["share"] = gdf_merged["share"].fillna(0)
+
         gdf_merged = gdf_merged.to_crs(epsg=4326)
-    
         return gdf_merged
-    

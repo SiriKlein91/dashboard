@@ -14,17 +14,19 @@ class PlotService:
 
 
 
-    def density_plot(self, start=None, end=None):
-        
-        # PLZ-Daten für Choropleth
-        df = self.analytics.plz_geo_summary(start, end)
+    def density_plot(self, start=None, end=None, admission_list=None):
+        df = self.analytics.plz_geo_summary(start=start, end=end, admission_list=admission_list)
 
-        # Choropleth-Karte
+        # Sicherstellen, dass alle PLZ angezeigt werden
+        all_plz = self.analytics.plz_geo_summary(start, end, admission_list=None)
+        df = all_plz.merge(df[["count"]], left_index=True, right_index=True, how="left", suffixes=("", "_filtered"))
+        df["count_filtered"] = df["count_filtered"].fillna(0)
+
         fig = px.choropleth_mapbox(
             df,
             geojson=df.geometry,
             locations=df.index,
-            color="count",
+            color="count_filtered",
             hover_name="name",
             hover_data=["mean_age"],
             mapbox_style="carto-positron",
@@ -34,64 +36,64 @@ class PlotService:
             color_continuous_scale=px.colors.sequential.Greys
         )
 
-        # Hover-Template anpassen
         fig.update_traces(
             hovertemplate=(
-                "<b>%{customdata[0]}</b><br>"  # Name
+                "<b>%{customdata[0]}</b><br>"
+                "PLZ: %{customdata[3]}</br>"
                 "Anzahl Kunden: %{customdata[1]}<br>"
-                "Anteil an Gesamtkunden: %{customdata[3]:.1f}%<br>"
                 "Durchschnittsalter: %{customdata[2]}<extra></extra>"
             ),
-            customdata=df[["name", "count", "mean_age_rounded", "share", "plz"]].values
+            customdata=df[["name", "count_filtered", "mean_age_rounded", "plz"]].values
         )
 
         for gym, coords in BOULDERGYMS.items():
             fig.add_trace(go.Scattermapbox(
-                    lon=[coords[0]],
-                    lat=[coords[1]],
-                    mode="markers",
-                    name=gym,
-                    marker=dict(size=20, color="red", symbol="circle"),
-                    showlegend=False,
-                    hoverinfo="text",
-                    text = [gym]
-                )
-            )
+                lon=[coords[0]],
+                lat=[coords[1]],
+                mode="markers",
+                name=gym,
+                marker=dict(size=20, color="red", symbol="circle"),
+                showlegend=False,
+                hoverinfo="text",
+                text=[gym]
+            ))
 
-        fig.update_layout(
-            height=600,   # Höhe erhöhen
-            width=700,    # Breite etwas schmaler
-            margin={"r":0,"t":0,"l":0,"b":0}  # Ränder auf 0, damit Karte maximal Platz nutzt
-        )
+        fig.update_layout(height=600, width=700, margin={"r":0,"t":0,"l":0,"b":0})
         return fig
 
 
 
-
     
-    def age_histogram(self, start=None, end=None, plz_list=None, country_list=None, dist=5):
+    def age_histogram(self, start=None, end=None, plz_list=None, country_list=None, dist=5, admission_list = None):
     # Farben
         color_map = {
             "Berlin": "#33cc33",
             "Tourist": "#ff3399"
         }
         gender_labels = {"m": "Männlich", "w": "Weiblich", "d": "Divers"}
+        gender_order = ["m", "w", "d"]
 
         # Daten vorbereiten
-        df_plot, gender_share, origin_share = self.analytics.create_bins(start, end, plz_list, country_list, dist)
+        df_plot, gender_share, origin_share = self.analytics.create_bins(start, end, plz_list, country_list, dist, admission_list)
+        df_plot["gender"] = pd.Categorical(df_plot["gender"], categories=gender_order, ordered=True)
+
         categories = df_plot["age_category"].cat.categories
+
+
         gender_text = "<br>".join([f"{row.gender}: {row.percent:.1f} %" for _, row in gender_share.iterrows()])
         origin_text = "<br>".join([f'<span style="color:{color_map[row.origin]};">■</span> {row.origin}: {row.percent:.1f} %'
                                 for _, row in origin_share.iterrows()])
 
         # Plot
+        print(df_plot["gender"].unique())
+
         fig = px.bar(
             df_plot,
             x="age_category",
             y="percent",
             color="origin",               # stacked nach Herkunft
             facet_col="gender",           # drei Balken nebeneinander für m/w/d
-            category_orders={"age_category": categories, "gender": ["m", "w", "d"]},
+            category_orders={"age_category": categories, "gender": gender_order},
             color_discrete_map=color_map,
             barmode="stack",
             custom_data=["gender", "origin"]  # für Hovertext

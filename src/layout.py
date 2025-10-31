@@ -50,6 +50,7 @@ def create_layout(plots: PlotService):
 
             # Mittlere Spalte: zwei Grafiken
             html.Div([
+                dcc.Store(id="last-admission-click", data=None),
                 dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date)),
                 dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date))
             ], className="column middle-column"),
