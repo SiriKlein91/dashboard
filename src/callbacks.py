@@ -27,10 +27,10 @@ def register_callbacks(app, plots: PlotService):
         plz_list = None
 
         if map_select and "points" in map_select: 
-            plz_list = [point["customdata"][3] for point in map_select["points"] if "customdata" in point and point["customdata"] is not None] 
+            plz_list = [point["customdata"][4] for point in map_select["points"] if "customdata" in point and point["customdata"] is not None] 
         elif map_click and "points" in map_click:
-            print(map_click["points"][0]["customdata"])
             plz_list = [map_click["points"][0]["customdata"][3]]
+
 
         # Reset über Relayout
         if relayoutData and "xaxis.autorange" in relayoutData:

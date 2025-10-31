@@ -64,7 +64,7 @@ class PlotService:
 
 
     
-    def age_histogram(self, start=None, end=None, plz_list=None, country_list=None, dist=5, admission_list = None):
+    def age_histogram(self, start=None, end=None, plz_list=None, country_list=None,  admission_list = None):
     # Farben
         color_map = {
             "Berlin": "#33cc33",
@@ -74,7 +74,7 @@ class PlotService:
         gender_order = ["m", "w", "d"]
 
         # Daten vorbereiten
-        df_plot, gender_share, origin_share = self.analytics.create_bins(start, end, plz_list, country_list, dist, admission_list)
+        df_plot, gender_share, origin_share = self.analytics.create_bins(start, end, plz_list, country_list, admission_list)
         df_plot["gender"] = pd.Categorical(df_plot["gender"], categories=gender_order, ordered=True)
 
         categories = df_plot["age_category"].cat.categories
@@ -85,7 +85,6 @@ class PlotService:
                                 for _, row in origin_share.iterrows()])
 
         # Plot
-        print(df_plot["gender"].unique())
 
         fig = px.bar(
             df_plot,

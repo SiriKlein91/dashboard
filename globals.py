@@ -14,6 +14,7 @@ SHAPEFILE_BERLIN_PATH = "data/berlin_plz_shapefile/plz.shp"
 QUESTION_PATH = "data/questions.json"
 BOULDERGYM_PATH = "data/Bouldergyms.json"
 SUBWAY_PATH = "data/ubahn_colors_lan_lat.json"
+CATEGORY_PATH = "data/categories.json"
 
 
 
@@ -31,6 +32,10 @@ with open(SUBWAY_PATH) as f:
 # Edges einlesen
 with open(BOULDERGYM_PATH) as f:
     BOULDERGYMS = json.load(f)
+
+# Edges einlesen
+with open(CATEGORY_PATH) as f:
+    CATEGORY_MAP = json.load(f)
 
 
 # City-Dictionary
