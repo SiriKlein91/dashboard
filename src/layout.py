@@ -85,7 +85,8 @@ def create_layout(plots: PlotService):
                 ], value = "admission",  id='loyalty-dropdown'),
                 dcc.Store(id="loyalty-store", data=None),
                 dcc.Graph(id="loyalty-histogram", figure=plots.loyalty_histogram("admission", start=start_date, end=end_date), className= "placeholder-card"),
-                html.Div(id="placeholder-2", className="placeholder-card")
+                dcc.Graph(id="cohort-heatmap", figure=plots.cohort_heatmap(start=start_date, end=end_date),  className= "placeholder-card"),
+                #html.Div(id="placeholder-2", className="placeholder-card")
             ], className="column right-column"),
 
         ], className="main-container"),

@@ -255,3 +255,42 @@ class AnalyticsService:
         categories = freq[group_col].unique()
         return freq, categories
     
+
+    def create_cohort_table(self, start=None, end=None, plz_list = None, admission_list = None):
+        df = self.filter_data(start=start, end=end, plz_list=plz_list,  admission_list = admission_list )
+
+        # Erstbesuch pro Kunde
+        df["first_visit"] = df.groupby("customer_id")["time"].transform("min")
+
+        # Monat der Kohorte (zB 2024-01)
+        df["cohort_month"] = df["first_visit"].dt.to_period("M")
+
+        # Monat der aktuellen Aktivität
+        df["visit_month"] = df["time"].dt.to_period("M")
+
+        # Offset in Monaten
+        df["month_offset"] = (df["visit_month"] - df["cohort_month"]).apply(lambda x: x.n)
+
+        # Kunden, die in der Kohorte irgendwann wiedergekommen sind
+        cohort_counts = (
+            df.groupby(["cohort_month", "month_offset"])["customer_id"]
+            .nunique()
+            .reset_index()
+        )
+
+        # Pivot: Zeilen Kohorten, Spalten Offsets
+        pivot = cohort_counts.pivot(
+            index="cohort_month",
+            columns="month_offset",
+            values="customer_id"
+        ).fillna(0)
+
+        # Größe der Kohorte (Monat 0)
+        cohort_sizes = pivot[0]
+
+        # Relative Retention pro Monat
+        retention = pivot.div(cohort_sizes, axis=0).round(3)*100
+
+        return retention
+
+

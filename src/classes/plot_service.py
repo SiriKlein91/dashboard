@@ -287,3 +287,29 @@ class PlotService:
         )
     
         return fig
+    
+    def cohort_heatmap(self, start=None, end=None, plz_list=None, admission_list=None):
+        retention = self.analytics.create_cohort_table(start = start, end= end, plz_list=plz_list, admission_list=admission_list)
+
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=retention.values,
+                x=retention.columns.astype(int),
+                y=retention.index.astype(str),
+                hovertemplate=(
+                    "Kohorte: %{y}" +
+                    "<br>Monat: %{x}" +
+                    "<br>Kundenbindung: %{z} %" +
+                    "<extra></extra>"
+                ),
+                colorscale="Blues"
+            )
+        )
+
+        fig.update_layout(
+            title="Kundenbindungsrate der Neukunden",
+            xaxis_title="Monate seit Erstbesuch",
+            yaxis_title="Kohortenmonat"
+        )
+
+        return fig

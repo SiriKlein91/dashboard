@@ -263,3 +263,12 @@ def register_callbacks(app, plots: PlotService):
     
 
     
+    @app.callback(
+        Output("cohort-heatmap", "figure"),
+        Input("plz-filter-store", "data"),
+        Input("admission-filter-store", "data"),
+        Input("date-picker", "start_date"),
+        Input("date-picker", "end_date"),
+    )
+    def update_cohort(plz_list, admission_list, start_date, end_date):
+        return plots.cohort_heatmap(start=start_date, end=end_date, plz_list=plz_list, admission_list=admission_list)
