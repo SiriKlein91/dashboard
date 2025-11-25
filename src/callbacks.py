@@ -64,23 +64,34 @@ def register_callbacks(app, plots: PlotService):
     def compute_admission(admission_click, last_admission_click):
         triggered = ctx.triggered_id
 
-        # Admission Filter
         admission_list = None
         new_last_admission_click = last_admission_click
+
         if triggered == "admission-distribution" and admission_click and "points" in admission_click:
-            clicked_label = admission_click["points"][0].get("label")
-            if clicked_label:
-                if last_admission_click == clicked_label:
+            point = admission_click["points"][0]
+
+            label = point.get("label")
+            parent = point.get("parent")
+
+            # Nur Parent Ebene soll interaktiv sein
+            if not parent:  # parent == "" oder None
+                if last_admission_click == label:
                     admission_list = None
                     new_last_admission_click = None
                 else:
-                    admission_list = [clicked_label]
-                    new_last_admission_click = clicked_label
+                    admission_list = [label]
+                    new_last_admission_click = label
+
+            else:
+                # Child Klicks ignorieren
+                return no_update, no_update
+
         else:
             if last_admission_click:
                 admission_list = [last_admission_click]
 
         return admission_list, new_last_admission_click
+
 
     # ---------------------
     # Callback 2: Berlin Map aktualisieren
