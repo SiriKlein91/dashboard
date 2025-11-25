@@ -3,7 +3,24 @@ from src.classes.plot_service import PlotService
 from globals import UBAHN_COLOR_COORDS
 
 
+
 def create_layout(plots: PlotService):
+    berliner_bezirke = [
+        'Mitte',
+        'Friedrichshain Kreuzberg',
+        'Pankow',
+        'Charlottenburg Wilmersdorf',
+        'Spandau',
+        'Steglitz Zehlendorf',
+        'Tempelhof Schöneberg',
+        'Neukölln',
+        'Treptow Köpenick',
+        'Marzahn Hellersdorf',
+        'Lichtenberg',
+        'Reinickendorf',
+        'deutsche Städte',
+        'Ausland'
+    ]
     start_date = "2024-01-01"
     end_date = "2024-12-31" 
     return html.Div([
@@ -50,14 +67,24 @@ def create_layout(plots: PlotService):
 
             # Mittlere Spalte: zwei Grafiken
             html.Div([
-                dcc.Store(id="last-admission-click", data=None),
+                dcc.Store(id="last-admission-click-store", data=None),
+                dcc.Store(id="last-sunburst-id", data=None),
+                dcc.Store(id="plz-filter-store", data=None),
+                dcc.Store(id="admission-filter-store", data=None),
+                dcc.Store(id="selected-points-store", data=None),
                 dcc.Graph(id="age-distribution", figure=plots.age_histogram(start=start_date, end=end_date)),
                 dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date))
             ], className="column middle-column"),
 
             # Rechte Spalte: Platzhalter
             html.Div([
-                html.Div(id="placeholder-1", className="placeholder-card"),
+                dcc.Dropdown(options=[
+                    {'label': 'Gebiet', 'value': 'bezirke'},
+                    {'label': 'Eintrittsart', 'value': 'admission'},
+                    {'label': 'Alter', 'value': 'age_category'},
+                ], value = "admission",  id='loyalty-dropdown'),
+                dcc.Store(id="loyalty-store", data=None),
+                dcc.Graph(id="loyalty-histogram", figure=plots.loyalty_histogram("admission", start=start_date, end=end_date), className= "placeholder-card"),
                 html.Div(id="placeholder-2", className="placeholder-card")
             ], className="column right-column"),
 

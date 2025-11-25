@@ -1,98 +1,265 @@
-from dash import html, Input, Output, State, ctx, no_update
+
+from dash import html, dcc, Input, Output, State, ctx, no_update
 from src.classes.plot_service import PlotService
 from globals import UBAHN_COLOR_COORDS, BOULDERGYMS
 import plotly.graph_objects as go
 
 def register_callbacks(app, plots: PlotService):
 
+    # ---------------------
+    # Callback 1: Filter berechnen und in Stores speichern
+    # ---------------------
     @app.callback(
-        Output("berlin-graph", "figure"),
-        Output("age-distribution", "figure"),
-        Output("admission-distribution", "figure"),
-        Output("last-admission-click", "data"),
-        Input("subway-checklist-id", "value"),
+        Output("plz-filter-store", "data"),
+        Output("selected-points-store", "data"),
         Input("berlin-graph", "clickData"),
         Input("berlin-graph", "selectedData"),
         Input("berlin-graph", "relayoutData"),
-        Input("admission-distribution", "clickData"),
-        Input("date-picker", "start_date"),
-        Input("date-picker", "end_date"),
-        State("berlin-graph", "figure"),
-        State("last-admission-click", "data")
+        Input("selected-points-store", "data")
     )
-    def update_figures(selected_subways, map_click, map_select, relayoutData, admission_click, start_date, end_date, current_fig, last_click):
-        triggered = ctx.triggered_id
-
-        # PLZ-Liste von Karte
-        plz_list = None
-
-        if map_select and "points" in map_select: 
-            plz_list = [point["customdata"][4] for point in map_select["points"] if "customdata" in point and point["customdata"] is not None] 
-        elif map_click and "points" in map_click:
-            plz_list = [map_click["points"][0]["customdata"][3]]
-
-
-        # Reset über Relayout
-        if relayoutData and "xaxis.autorange" in relayoutData:
-            plz_list = None
-            map_click = None
-            map_select = None
-
-        triggered = ctx.triggered_id
-
-    # Standard: kein Admission-Filter
-        admission_list = None
-
-        if triggered == "admission-distribution" and admission_click:
-            clicked_label = admission_click["points"][0]["label"]
-            print(clicked_label)
-            # Prüfen: doppelt geklickt → Filter zurücksetzen
-            if clicked_label not in ["Abo", "Tageseintritt", "USC"]:
-                return no_update, no_update, no_update, no_update
-            elif last_click == clicked_label:
-                admission_list = None
-                last_click = None
-            else:
-                admission_list = [clicked_label]
-                last_click = clicked_label
+    def compute_plz(map_click, map_select, relayoutData, selected_points):
+        triggered = ctx.triggered_prop_ids
 
         
-        if current_fig:
-            berlin_map = go.Figure(current_fig)
-            if triggered in ["subway-checklist-id", "date-picker", "admission-distribution"]:
-                # nur dann neu filtern / Basistraces entfernen
-                trace_names = [t.name for t in berlin_map.data]
-                delete_list = list(set(trace_names) - set(selected_subways or []) - set(BOULDERGYMS.keys()))
-                berlin_map.data = tuple(t for t in berlin_map.data if not t.name or t.name not in delete_list)
-                # ggf. Admission-Filter auf die Choropleth-Daten anwenden
-                df = plots.analytics.plz_geo_summary(start=start_date, end=end_date, admission_list=admission_list)
-                berlin_map.data[0].z = df["count"]  # Beispiel: nur Count aktualisieren
-                berlin_map.data[0].customdata = df[["name", "count", "mean_age_rounded", "share", "plz"]].values
-        else:
-            # initiale Map
-            berlin_map = plots.density_plot(start=start_date, end=end_date)
 
-        # Subway-Traces hinzufügen
-        if selected_subways:
-            for ubahn in selected_subways:
+        # --- Hilfsfunktion: sichere PLZ-Extraktion ---
+        def extract_plz(point):
+            if not point.get("customdata"):
+                return None
+            for v in reversed(point["customdata"]):
+                if isinstance(v, str) and v.strip().isdigit():
+                    return v.strip()
+            return point.get("location")
+        
+
+        if "berlin-graph.relayoutData" in triggered.keys():
+            if 'mapbox.center' not in ctx.args_grouping[2]["value"].keys():
+                return no_update, no_update
+            else:
+                return None, None
+        
+        else:
+        # PLZ-Liste
+            plz_list = None
+            if map_select and "points" in map_select:
+                selected_points = [p["pointIndex"] for p in map_select["points"] if extract_plz(p)]
+
+                plz_list = list({extract_plz(p) for p in map_select["points"] if extract_plz(p)})
+            elif map_click and "points" in map_click:
+                selected_points = map_click["points"]["pointIndex"]
+                plz = extract_plz(map_click["points"][0])
+                plz_list = [plz] if plz else None
+
+
+        
+
+        return plz_list, selected_points
+
+    @app.callback(
+        Output("admission-filter-store", "data"),
+        Output("last-admission-click-store", "data"),
+        Input("admission-distribution", "clickData"),
+        State("last-admission-click-store", "data"),
+    )
+    def compute_admission(admission_click, last_admission_click):
+        triggered = ctx.triggered_id
+
+        # Admission Filter
+        admission_list = None
+        new_last_admission_click = last_admission_click
+        if triggered == "admission-distribution" and admission_click and "points" in admission_click:
+            clicked_label = admission_click["points"][0].get("label")
+            if clicked_label:
+                if last_admission_click == clicked_label:
+                    admission_list = None
+                    new_last_admission_click = None
+                else:
+                    admission_list = [clicked_label]
+                    new_last_admission_click = clicked_label
+        else:
+            if last_admission_click:
+                admission_list = [last_admission_click]
+
+        return admission_list, new_last_admission_click
+
+    # ---------------------
+    # Callback 2: Berlin Map aktualisieren
+    # ---------------------
+    @app.callback(
+        Output("berlin-graph", "figure"),
+        Input("admission-filter-store", "data"),
+        Input("subway-checklist-id", "value"),
+        Input("date-picker", "start_date"),
+        Input("date-picker", "end_date"),
+        Input("selected-points-store", "data"),
+        State("berlin-graph", "figure"),
+    )   
+    def update_berlin_map(admission_list, selected_subways, start_date, end_date, selected_points, current_fig):
+
+        # -------------------------------
+        # 1. Initialisierung: Karte einmal erzeugen
+        # -------------------------------
+        if current_fig is None:
+            fig = plots.density_plot(start=start_date, end=end_date, admission_list=admission_list)
+
+            # Subway Traces setzen
+            for ubahn in selected_subways or []:
                 color, lon, lat = UBAHN_COLOR_COORDS[ubahn]
-                berlin_map.add_trace(go.Scattermapbox(
-                    lon=lon,
-                    lat=lat,
-                    mode="lines",
-                    line=dict(color=color, width=5),
+                fig.add_trace(go.Scattermapbox(
+                    lon=lon, lat=lat, mode="markers+lines",
+                    line=dict(width=5, color=color),
                     name=ubahn,
                     showlegend=False,
                     hoverinfo="skip"
                 ))
 
-        # Histogramm reagiert auf PLZ- und Admission-Auswahl
-        hist = plots.age_histogram(start=start_date, end=end_date, plz_list=plz_list, admission_list=admission_list)
+            return fig
 
-        # Sunburst nur neu laden, wenn nicht selbst geklickt
-        admission_fig = plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date, plz_list=plz_list) \
-            if triggered != "admission-distribution" else no_update
+        # -------------------------------
+        # 2. Figur wiederverwenden
+        # -------------------------------
+        fig = go.Figure(current_fig)
 
-        return berlin_map, hist, admission_fig, last_click
+        # -------------------------------
+        # 3. Choropleth Daten aktualisieren (ohne neue Figur zu bauen)
+        # -------------------------------
+        df = plots.analytics.plz_geo_summary_all_plz(start=start_date, end=end_date, admission_list=admission_list)
+
+      
+        # erstes trace ist IMMER das choropleth trace
+        choropleth_trace = fig.data[0]
+
+        # z aktualisieren
+        choropleth_trace.z = df["count_filtered"]
+
+        # customdata aktualisieren
+        choropleth_trace.customdata = df[["name", "count_filtered", "mean_age_rounded", "plz"]].values
+
+        fig.data = tuple([choropleth_trace] + list(fig.data[1:]))
+
+        # -------------------------------
+        # 4. Subway Traces neu setzen
+        # -------------------------------
+        fig.data = tuple([fig.data[0]] + [
+            t for t in fig.data[1:]
+            if t.name in BOULDERGYMS or t.name in UBAHN_COLOR_COORDS
+        ])
+
+        for ubahn in selected_subways or []:
+            if ubahn not in [t.name for t in fig.data]:
+                color, lon, lat = UBAHN_COLOR_COORDS[ubahn]
+                fig.add_trace(go.Scattermapbox(
+                    lon=lon, lat=lat, mode="markers+lines",
+                    line=dict(width=5, color=color),
+                    name=ubahn,
+                    showlegend=False,
+                    hoverinfo="skip"
+                ))
+        fig.data[0].selectedpoints = selected_points
+        return fig
 
 
+    # ---------------------
+    # Callback 3: Histogramm aktualisieren
+    # ---------------------
+    @app.callback(
+        Output("age-distribution", "figure"),
+        Input("plz-filter-store", "data"),
+        Input("admission-filter-store", "data"),
+        Input("date-picker", "start_date"),
+        Input("date-picker", "end_date"),
+    )
+    def update_histogram(plz_list, admission_list, start_date, end_date):
+        fig = plots.age_histogram(start=start_date, end=end_date, plz_list=plz_list, admission_list=admission_list)
+        return fig
+
+    # ---------------------
+    # Callback 4: Sunburst aktualisieren
+    # ---------------------
+   
+
+
+    @app.callback(
+    Output("admission-distribution", "figure"),
+    Input("plz-filter-store", "data"),
+    Input("date-picker", "start_date"),
+    Input("date-picker", "end_date"),
+    State("admission-distribution", "figure"),
+)
+    def update_sunburst(plz_list, start_date, end_date, current_fig):
+
+
+        triggered = ctx.triggered_id
+        
+
+        # Wenn der Sunburst selbst geklickt wurde → nicht aktualisieren
+        if triggered == "admission-distribution":
+            return no_update
+        # 1. INITIALER AUFRUF – FIGURE ERZEUGEN
+        if current_fig is None:
+            fig = plots.sunburst_plot(
+                ["admission", "admission_detail"],
+                start=start_date,
+                end=end_date,
+                plz_list=plz_list
+            )
+            return fig
+
+        # 2. EXISTIERENDE FIG – NUR DATEN AKTUALISIEREN
+        fig = go.Figure(current_fig)
+
+        new_fig = plots.sunburst_plot(
+            ["admission", "admission_detail"],
+            start=start_date,
+            end=end_date,
+            plz_list=plz_list,
+            
+        )
+
+        # 3. ERSETZT NUR DEN SUNBURST-TRACE
+        # Sunburst ist IMMER der erste Trace
+        # 4. Nur den ersten Trace aktualisieren, nicht alle Traces
+
+
+        if fig.data and new_fig.data:
+            #fig.data[0].labels = new_fig.data[0].labels
+            #fig.data[0].parents = new_fig.data[0].parents
+            fig.data[0].values = new_fig.data[0].values
+            fig.data[0].customdata = new_fig.data[0].customdata
+            fig.data[0].hovertemplate = new_fig.data[0].hovertemplate
+
+        # 4. LAYOUT ÜBERNEHMEN (Title, Margin, Farben, etc.)
+        #fig.update_layout(new_fig.layout)
+
+        return fig
+    
+
+    @app.callback(
+        Output("loyalty-histogram", "figure"),
+        Input("plz-filter-store", "data"),
+        Input("admission-filter-store", "data"),
+        Input("date-picker", "start_date"),
+        Input("date-picker", "end_date"),
+        Input("loyalty-store", "data")
+    )
+    def update_loyalty_histogram(plz_list, admission_list, start_date, end_date, filter):
+
+        
+        fig = plots.loyalty_histogram(
+            filter,
+            start=start_date,
+            end=end_date,
+            plz_list=plz_list,
+            admission_list=admission_list
+        )
+        return fig
+       
+    @app.callback(
+        Output('loyalty-store', 'data'),
+        Input('loyalty-dropdown', 'value')
+    )
+    def update_output(value):
+        return value
+    
+
+    

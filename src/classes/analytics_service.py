@@ -1,11 +1,16 @@
 import pandas as pd
 from src.classes.customer_data import CustomerDataFrame
 from src.classes.entry_data import EntryDataFrame
-from globals import GDF, GERMAN_PLZ, CATEGORY_MAP
+from globals import GDF, GERMAN_PLZ, CATEGORY_MAP, BERLIN_BEZIRKE
 from pandas.api.types import CategoricalDtype
 import numpy as np
 import warnings
 
+
+def map_bezirk(name):
+    if isinstance(name, str) and name in BERLIN_BEZIRKE:
+        return BERLIN_BEZIRKE[name]
+    return "andere deutsche stadt"
 
 class AnalyticsService:
     def __init__(self, customers: CustomerDataFrame, entries: EntryDataFrame):
@@ -13,6 +18,13 @@ class AnalyticsService:
         self.entries = entries.df
         # Mergen nach customer_id für Analysen
         self.merged = self.entries.merge(self.customers, on="customer_id", how="left").drop(columns=["admission_y"]).rename(columns={"admission_x": "admission"})
+        self.merged = self.merged.merge(GERMAN_PLZ[["plz", "name"]], on="plz", how="left")
+        self.merged["bezirke"] = self.merged["name"].apply(map_bezirk)
+
+        self.merged["bezirke"] = self.merged["bezirke"].fillna("deutsche Städte")
+        self.merged = self.create_bins()
+     
+
         self.total_count = self.merged.shape[0]
 
     def __repr__(self):
@@ -22,9 +34,9 @@ class AnalyticsService:
     def __str__(self):
         # Wenn print() aufgerufen wird
         return str(self.merged)
+   
 
-
-    def filter_data(self, start=None, end=None, plz_list=None, country_list=None, admission_list=None):
+    def filter_data(self, start=None, end=None, plz_list=None, country_list=None, admission_list=None, bezirke_list= None):
         df = self.merged.copy()
 
         # Start-/Enddatum prüfen
@@ -52,6 +64,12 @@ class AnalyticsService:
                 warnings.warn(f"Admission-Kategorien {missing_admissions} existieren nicht im Datensatz.")
             df = df[df["admission"].isin(admission_list)]
 
+        if bezirke_list:
+            missing_bezirke = set(bezirke_list) - set(df["bezirke"].unique())
+            if missing_bezirke:
+                warnings.warn(f"Bezirke {missing_bezirke} existieren nicht im Datensatz.")
+            df = df[df["bezirke"].isin(bezirke_list)]
+
         # Warnung, falls nach allen Filtern keine Daten übrig bleiben
         if df.empty:
             warnings.warn("Der gefilterte DataFrame ist leer. Prüfe die Filtereinstellungen.")
@@ -60,17 +78,7 @@ class AnalyticsService:
 
 
 
-    def plz_summary(self, start=None, end=None, plz_list = None, country_list = None, admission_list = None):
-        df = self.filter_data(start, end, plz_list, country_list, admission_list)
-        return df.groupby("plz").agg(
-            count=("entry_id", "size"),
-            mean_age=("age", "mean")
-        )
-
-    
-    def create_bins(self, start=None, end=None, plz_list=None, country_list=None, admission_list = None):
-
-        
+    def create_bins(self, start = None, end = None, plz_list = None, country_list = None, admission_list = None, dist=5):
         df = self.filter_data(start, end, plz_list, country_list, admission_list)
 
         if df.empty:
@@ -101,8 +109,16 @@ class AnalyticsService:
         else:
             df["age_category"] = pd.Series([], dtype=cat_type)
             df["origin"] = pd.Series([], dtype=origin_type)
-        
+    
+        return(df)
 
+    
+    def create_histogram(self, start=None, end=None, plz_list=None, country_list=None, admission_list = None, bezirke_list= None):
+
+        df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
+        labels = CATEGORY_MAP["age_category"]
+        cat_type = CategoricalDtype(categories=CATEGORY_MAP["age_category"], ordered=True)
+        origin_type = CategoricalDtype(categories= CATEGORY_MAP["origin"], ordered=False)
         # Gruppieren nach Altersklasse, Geschlecht und Herkunft
         grouped = (
             df.groupby(["age_category", "gender", "origin"], observed=False)
@@ -141,9 +157,8 @@ class AnalyticsService:
         return grouped, gender_share, origin_share
 
     
-    def proportion(self, group_list, start=None, end=None, plz_list=None, country_list=None, admission_list=None):
-        df = self.filter_data(start, end, plz_list, country_list, admission_list)
-
+    def proportion(self, group_list, start=None, end=None, plz_list=None, country_list=None, admission_list=None, bezirke_list= None):
+        df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
         if df.empty:
             warnings.warn("Filter führt zu leerem DataFrame. Ergebnis wird leer zurückgegeben.", UserWarning)
 
@@ -169,11 +184,18 @@ class AnalyticsService:
                     df[col] = pd.Series([pd.NA] * len(df), dtype=object)
         result = df.groupby(group_list, observed=False).size().reset_index(name="count")
         return result
-
     
-    def plz_geo_summary(self, start=None, end=None, admission_list=None):
-        df = self.filter_data(start=start, end=end, admission_list=admission_list)
-        df = df.merge(GERMAN_PLZ[["plz", "name"]], on="plz", how="left")
+
+    def plz_summary(self, start=None, end=None, plz_list = None, country_list = None, admission_list = None, bezirke_list= None):
+        df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
+        return df.groupby("plz").agg(
+            count=("entry_id", "size"),
+            mean_age=("age", "mean")
+        )
+    
+    def plz_geo_summary(self, start=None, end=None, admission_list=None, bezirke_list=None):
+        df = self.filter_data(start=start, end=end, admission_list=admission_list, bezirke_list=bezirke_list)
+        
         summary = df.groupby(["plz", "name"]).agg(
             count=("entry_id", "size"),
             mean_age=("age", "mean")
@@ -197,3 +219,39 @@ class AnalyticsService:
 
         gdf_merged = gdf_merged.to_crs(epsg=4326)
         return gdf_merged
+    
+    def plz_geo_summary_all_plz(self, start=None, end=None, admission_list=None, bezirke_list=None):
+        df = self.plz_geo_summary(start=start, end=end, admission_list=admission_list, bezirke_list=bezirke_list)
+
+        # Sicherstellen, dass alle PLZ angezeigt werden
+        all_plz = self.plz_geo_summary(start=None, end=None, admission_list=None, bezirke_list= None)
+        df = all_plz.merge(df[["count"]], left_index=True, right_index=True, how="left", suffixes=("", "_filtered"))
+        df["count_filtered"] = df["count_filtered"].fillna(0)
+        return df
+    
+    
+    
+    
+    
+    def create_loyalty_histogram(self, group_col, start=None, end=None, plz_list =None, country_list = None, admission_list=None, bezirke_list= None):
+        
+        df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
+        
+        #df["bezirke"] = df["name"].str.contains("Berlin", na=False).replace({True: "Berlin", False: None})
+        
+        
+        
+        df = df.groupby(["customer_id", group_col], observed = True).agg(count=("entry_id", "size")).reset_index()
+        #df= self.number_of_visits(group_col,start =start, end =end, plz_list = plz_list, country_list=country_list, admission_list=admission_list)
+        df["count"] = df["count"].astype(int)
+        # Häufigkeiten pro Kategorie
+        freq = (
+            df.groupby([group_col, "count"], observed=True)
+              .size()
+              .reset_index(name="freq")
+              .sort_values(["count"])
+        )
+    
+        categories = freq[group_col].unique()
+        return freq, categories
+    

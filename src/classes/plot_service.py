@@ -15,12 +15,8 @@ class PlotService:
 
 
     def density_plot(self, start=None, end=None, admission_list=None):
-        df = self.analytics.plz_geo_summary(start=start, end=end, admission_list=admission_list)
-
-        # Sicherstellen, dass alle PLZ angezeigt werden
-        all_plz = self.analytics.plz_geo_summary(start, end, admission_list=None)
-        df = all_plz.merge(df[["count"]], left_index=True, right_index=True, how="left", suffixes=("", "_filtered"))
-        df["count_filtered"] = df["count_filtered"].fillna(0)
+        df = self.analytics.plz_geo_summary_all_plz(start=start, end=end, admission_list=admission_list)
+        
 
         fig = px.choropleth_mapbox(
             df,
@@ -64,7 +60,7 @@ class PlotService:
 
 
     
-    def age_histogram(self, start=None, end=None, plz_list=None, country_list=None,  admission_list = None):
+    def age_histogram(self, start=None, end=None, plz_list=None, country_list=None,  admission_list = None, bezirke_list= None):
     # Farben
         color_map = {
             "Berlin": "#33cc33",
@@ -74,7 +70,7 @@ class PlotService:
         gender_order = ["m", "w", "d"]
 
         # Daten vorbereiten
-        df_plot, gender_share, origin_share = self.analytics.create_bins(start, end, plz_list, country_list, admission_list)
+        df_plot, gender_share, origin_share = self.analytics.create_histogram(start, end, plz_list, country_list, admission_list, bezirke_list)
         df_plot["gender"] = pd.Categorical(df_plot["gender"], categories=gender_order, ordered=True)
 
         categories = df_plot["age_category"].cat.categories
@@ -139,8 +135,8 @@ class PlotService:
 
 
     
-    def sunburst_plot(self,group_list, start=None, end= None, plz_list = None, country_list = None, limit = None):
-        df= self.analytics.proportion(group_list, start, end, plz_list, country_list)
+    def sunburst_plot(self,group_list, start=None, end= None, plz_list = None, country_list = None, bezirke_list= None, limit = None):
+        df= self.analytics.proportion(group_list, start, end, plz_list, country_list, bezirke_list)
         total = df["count"].sum()
         df["percent_total"] = df["count"] / total * 100
         
@@ -167,6 +163,7 @@ class PlotService:
             values='count',
             hover_data=["count", "percent_total"]
         )
+        
         #fig.update_traces(hovertemplate="%{label}<br>Anzahl: %{customdata[0]}<br>Prozent Gesamt: %{customdata[1]:.1f}%")
         fig.update_traces(hovertemplate="%{label}<br>Anzahl: %{value}<br>Prozent Parent: %{percentParent:.1%}<br>Prozent Gesamt: %{percentRoot:.1%}")
         return fig
@@ -255,4 +252,38 @@ class PlotService:
             margin=dict(r=0, l=0, b=0, t=40),
             geo_bgcolor="rgba(0,0,0,0)"
         )
+        return fig
+    
+    def loyalty_histogram(self, group_col, start=None, end=None,
+                          plz_list=None, country_list=None, admission_list=None, bezirke_list= None):
+        
+        
+    
+        freq, categories = self.analytics.create_loyalty_histogram(group_col, start, end, plz_list, country_list, admission_list)
+    
+        fig = go.Figure()  
+        # Jede Kategorie als eigener Trace
+        for cat in categories:
+            sub = freq[freq[group_col] == cat]
+    
+            fig.add_trace(go.Bar(
+                x=sub["count"],
+                y=sub["freq"],
+                name=str(cat),
+                hovertemplate=(
+                    f"{group_col}: {cat}<br>"
+                    "Besuche: %{x}<br>"
+                    "Anzahl Kunden: %{y}<extra></extra>"
+                )
+            ))
+    
+        fig.update_layout(
+            title="Häufigkeitsverteilung der Kundenbesuche",
+            xaxis_title="Anzahl der Besuche",
+            yaxis_title="Häufigkeit",
+            bargroupgap=0.1,
+            barmode="stack",
+            margin=dict(l=40, r=20, t=60, b=40),
+        )
+    
         return fig

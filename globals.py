@@ -15,7 +15,7 @@ QUESTION_PATH = "data/questions.json"
 BOULDERGYM_PATH = "data/Bouldergyms.json"
 SUBWAY_PATH = "data/ubahn_colors_lan_lat.json"
 CATEGORY_PATH = "data/categories.json"
-
+BEZIRKE_PATH = "data/berlin_bezirke.json"
 
 
 # GeoDaten Berlin
@@ -28,6 +28,9 @@ GERMAN_PLZ['plz'] = GERMAN_PLZ['plz'].astype(str)
 # Edges einlesen
 with open(SUBWAY_PATH) as f:
     UBAHN_COLOR_COORDS = json.load(f)
+
+with open(BEZIRKE_PATH) as f:
+    BERLIN_BEZIRKE = json.load(f)
 
 # Edges einlesen
 with open(BOULDERGYM_PATH) as f:
