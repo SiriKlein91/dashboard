@@ -25,7 +25,7 @@ class AnalyticsService:
         self.merged = self.create_bins()
      
 
-        self.total_count = self.merged.shape[0]
+        self.total_count = self.customers.shape[0]
 
     def __repr__(self):
         # Wenn die Instanz in der Konsole angezeigt wird
@@ -116,6 +116,7 @@ class AnalyticsService:
     def create_histogram(self, start=None, end=None, plz_list=None, country_list=None, admission_list = None, bezirke_list= None):
 
         df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
+        df = df.drop_duplicates("customer_id")
         labels = CATEGORY_MAP["age_category"]
         cat_type = CategoricalDtype(categories=CATEGORY_MAP["age_category"], ordered=True)
         origin_type = CategoricalDtype(categories= CATEGORY_MAP["origin"], ordered=False)
@@ -175,10 +176,10 @@ class AnalyticsService:
                 allowed = CATEGORY_MAP[col]
 
                 if col not in df.columns:
-                    df[col] = pd.Series([pd.NA] * len(df), dtype=pd.CategoricalDtype(categories=allowed, ordered=False))
+                    df[col] = pd.Series([pd.NA] * len(df), dtype=pd.CategoricalDtype(categories=allowed, ordered=True))
                 else:
                     # Falls Spalte nur NaNs enthält oder existiert
-                    df[col] = df[col].astype(pd.CategoricalDtype(categories=allowed, ordered=False))
+                    df[col] = df[col].astype(pd.CategoricalDtype(categories=allowed, ordered=True))
             else:
                 if col not in df.columns:
                     df[col] = pd.Series([pd.NA] * len(df), dtype=object)

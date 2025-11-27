@@ -46,7 +46,7 @@ def register_callbacks(app, plots: PlotService):
 
                 plz_list = list({extract_plz(p) for p in map_select["points"] if extract_plz(p)})
             elif map_click and "points" in map_click:
-                selected_points = map_click["points"]["pointIndex"]
+                selected_points = map_click["points"][0]["pointIndex"]
                 plz = extract_plz(map_click["points"][0])
                 plz_list = [plz] if plz else None
 
@@ -155,18 +155,24 @@ def register_callbacks(app, plots: PlotService):
             t for t in fig.data[1:]
             if t.name in BOULDERGYMS or t.name in UBAHN_COLOR_COORDS
         ])
-
+        fig.data = tuple([
+            t for t in fig.data
+            if t.name not in UBAHN_COLOR_COORDS
+        ])
         for ubahn in selected_subways or []:
-            if ubahn not in [t.name for t in fig.data]:
-                color, lon, lat = UBAHN_COLOR_COORDS[ubahn]
-                fig.add_trace(go.Scattermapbox(
-                    lon=lon, lat=lat, mode="markers+lines",
-                    line=dict(width=5, color=color),
-                    name=ubahn,
-                    showlegend=False,
-                    hoverinfo="skip"
-                ))
+            color, lon, lat = UBAHN_COLOR_COORDS[ubahn]
+            fig.add_trace(go.Scattermapbox(
+                lon=lon, lat=lat, mode="markers+lines",
+                line=dict(width=5, color=color),
+                name=ubahn,
+                showlegend=False,
+                hoverinfo="skip"
+            ))
+        for t in fig.data[1:]:
+            if t.name in BOULDERGYMS or t.name in UBAHN_COLOR_COORDS:
+                t.selectedpoints = None
         fig.data[0].selectedpoints = selected_points
+        
         return fig
 
 

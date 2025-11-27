@@ -48,7 +48,7 @@ class PlotService:
                 lat=[coords[1]],
                 mode="markers",
                 name=gym,
-                marker=dict(size=20, color="red", symbol="circle"),
+                marker=dict(size=16, color="red", symbol="circle"),
                 showlegend=False,
                 hoverinfo="text",
                 text=[gym]
@@ -63,8 +63,8 @@ class PlotService:
     def age_histogram(self, start=None, end=None, plz_list=None, country_list=None,  admission_list = None, bezirke_list= None):
     # Farben
         color_map = {
-            "Berlin": "#33cc33",
-            "Tourist": "#ff3399"
+            "Berlin": "#140697",
+            "Tourist": "#09b9b9"
         }
         gender_labels = {"m": "Männlich", "w": "Weiblich", "d": "Divers"}
         gender_order = ["m", "w", "d"]
@@ -79,7 +79,7 @@ class PlotService:
         gender_text = "<br>".join([f"{row.gender}: {row.percent:.1f} %" for _, row in gender_share.iterrows()])
         origin_text = "<br>".join([f'<span style="color:{color_map[row.origin]};">■</span> {row.origin}: {row.percent:.1f} %'
                                 for _, row in origin_share.iterrows()])
-
+        kunden_text = f"{df_plot['count'].sum()}"
         # Plot
 
         fig = px.bar(
@@ -91,14 +91,15 @@ class PlotService:
             category_orders={"age_category": categories, "gender": gender_order},
             color_discrete_map=color_map,
             barmode="stack",
-            custom_data=["gender", "origin"]  # für Hovertext
+            custom_data=["gender", "origin", "count"]  # für Hovertext
         )
-
+        print()
         # Hovertext anpassen
         fig.update_traces(
             hovertemplate=
             "Geschlecht: %{customdata[0]}<br>" +
             "Altersklasse: %{x}<br>" +
+            "Kundenanzahl: %{customdata[2]}<br>" +
             "Anteil an Gesamtkunden: %{y:.1f}%<br>" +
             "Herkunft: %{customdata[1]}"
         )
@@ -115,7 +116,7 @@ class PlotService:
             showlegend=False,  # Legende ausblenden
             annotations=[
                 dict(
-                    text=f"<b>Gesamtverteilung Geschlecht:</b><br>{gender_text}<br><b>Gesamtverteilung Herkunft:</b><br>{origin_text}",
+                    text=f"<b>Gesamtanzahl Kunden:</b><br>{kunden_text}<br><b><b>Gesamtverteilung Geschlecht:</b><br>{gender_text}<br><b>Gesamtverteilung Herkunft:</b><br>{origin_text}",
                     xref="paper", yref="paper",
                     x=0.98, y=0.95,        # rechts oben
                     xanchor="right", yanchor="top",
@@ -135,38 +136,47 @@ class PlotService:
 
 
     
-    def sunburst_plot(self,group_list, start=None, end= None, plz_list = None, country_list = None, bezirke_list= None, limit = None):
-        df= self.analytics.proportion(group_list, start, end, plz_list, country_list, bezirke_list)
+    def sunburst_plot(self, group_list, start=None, end=None, plz_list=None, country_list=None, bezirke_list=None, limit=None):
+        df = self.analytics.proportion(group_list, start, end, plz_list, country_list, bezirke_list)
         total = df["count"].sum()
         df["percent_total"] = df["count"] / total * 100
-        
+
         if limit:
             last_col = group_list[-1]
             df = df[df["count"] > 0]
-
             df[last_col] = df[last_col].astype(str)
-        
-            # Kleine Gruppen identifizieren
+
             small = df["percent_total"] < limit
-        
             if small.any():
-                # Neue Kategorie "Sonstige" einfügen
                 df.loc[small, last_col] = "Sonstige"
-                df = (df.groupby(group_list,as_index=False, observed=True).agg({"count": "sum"}))
+                df = df.groupby(group_list, as_index=False, observed=True).agg({"count": "sum"})
                 total = df["count"].sum()
                 df["percent_total"] = df["count"] / total * 100
 
-                
+        # Definiere deine Farben pro Kategorie
+        color_map = {
+            "Abo": "#110296",
+            "Tageseintritt": "#07ADCA",
+            "USC": "#6D01D3",
+            "Sonstige": "#FA637C"
+        }
+
+        # Hier wird die Farbe über die oberste Ebene der Gruppen gesetzt
         fig = px.sunburst(
             df,
             path=group_list,
             values='count',
+            color=group_list[0],  # Farbe nach der obersten Kategorie
+            color_discrete_map=color_map,
             hover_data=["count", "percent_total"]
         )
-        
-        #fig.update_traces(hovertemplate="%{label}<br>Anzahl: %{customdata[0]}<br>Prozent Gesamt: %{customdata[1]:.1f}%")
-        fig.update_traces(hovertemplate="%{label}<br>Anzahl: %{value}<br>Prozent Parent: %{percentParent:.1%}<br>Prozent Gesamt: %{percentRoot:.1%}")
+
+        fig.update_traces(
+            hovertemplate="%{label}<br>Anzahl: %{value}<br>Prozent Parent: %{percentParent:.1%}<br>Prozent Gesamt: %{percentRoot:.1%}"
+        )
+
         return fig
+
     
     def map_plot(self, group_list, start = None, end = None, plz_list = None, country_list = None):
         df = self.analytics.proportion(group_list, start, end, plz_list, country_list)
@@ -255,28 +265,47 @@ class PlotService:
         return fig
     
     def loyalty_histogram(self, group_col, start=None, end=None,
-                          plz_list=None, country_list=None, admission_list=None, bezirke_list= None):
-        
-        
-    
+                      plz_list=None, country_list=None, admission_list=None, bezirke_list=None):
+
         freq, categories = self.analytics.create_loyalty_histogram(group_col, start, end, plz_list, country_list, admission_list)
-    
-        fig = go.Figure()  
+
+        fig = go.Figure()
+
+        # Farbschemas je nach group_col
+        if group_col == "admission":
+            color_map = {
+                "Abo": "#110296",
+                "Tageseintritt": "#07ADCA",
+                "USC": "#6D01D3",
+                "Sonstige": "#FA637C"
+            }
+        elif group_col == "age_category":
+            dummy_colors = px.colors.qualitative.Plotly  # 9 Farben
+            color_map = {cat: dummy_colors[i % len(dummy_colors)] for i, cat in enumerate(categories)}
+        elif group_col == "bezirk":
+            dummy_colors = px.colors.qualitative.Set3  # 18 Farben
+            color_map = {cat: dummy_colors[i % len(dummy_colors)] for i, cat in enumerate(categories)}
+        else:
+            # fallback
+            dummy_colors = px.colors.qualitative.Vivid
+            color_map = {cat: dummy_colors[i % len(dummy_colors)] for i, cat in enumerate(categories)}
+
         # Jede Kategorie als eigener Trace
         for cat in categories:
             sub = freq[freq[group_col] == cat]
-    
+
             fig.add_trace(go.Bar(
                 x=sub["count"],
                 y=sub["freq"],
                 name=str(cat),
+                marker_color=color_map.get(cat, "#888888"),  # fallback grey
                 hovertemplate=(
                     f"{group_col}: {cat}<br>"
                     "Besuche: %{x}<br>"
                     "Anzahl Kunden: %{y}<extra></extra>"
                 )
             ))
-    
+
         fig.update_layout(
             title="Häufigkeitsverteilung der Kundenbesuche",
             xaxis_title="Anzahl der Besuche",
@@ -284,9 +313,12 @@ class PlotService:
             bargroupgap=0.1,
             barmode="stack",
             margin=dict(l=40, r=20, t=60, b=40),
+            paper_bgcolor="white",   # gesamter Hintergrund
+            plot_bgcolor="white"
         )
-    
+
         return fig
+
     
     def cohort_heatmap(self, start=None, end=None, plz_list=None, admission_list=None):
         retention = self.analytics.create_cohort_table(start = start, end= end, plz_list=plz_list, admission_list=admission_list)
@@ -302,7 +334,7 @@ class PlotService:
                     "<br>Kundenbindung: %{z} %" +
                     "<extra></extra>"
                 ),
-                colorscale="Blues"
+                colorscale="greys"
             )
         )
 
