@@ -132,18 +132,13 @@ def register_callbacks(app, plots: PlotService):
         fig = go.Figure(current_fig)
 
         # -------------------------------
-        # 3. Choropleth Daten aktualisieren (ohne neue Figur zu bauen)
+        # 3. Choropleth Daten aktualisieren 
         # -------------------------------
         df = plots.analytics.plz_geo_summary_all_plz(start=start_date, end=end_date, admission_list=admission_list)
 
-      
-        # erstes trace ist IMMER das choropleth trace
+    
         choropleth_trace = fig.data[0]
-
-        # z aktualisieren
         choropleth_trace.z = df["count_filtered"]
-
-        # customdata aktualisieren
         choropleth_trace.customdata = df[["name", "count_filtered", "mean_age_rounded", "plz"]].values
 
         fig.data = tuple([choropleth_trace] + list(fig.data[1:]))
@@ -233,10 +228,6 @@ def register_callbacks(app, plots: PlotService):
             
         )
 
-        # 3. ERSETZT NUR DEN SUNBURST-TRACE
-        # Sunburst ist IMMER der erste Trace
-        # 4. Nur den ersten Trace aktualisieren, nicht alle Traces
-
 
         if fig.data and new_fig.data:
             #fig.data[0].labels = new_fig.data[0].labels
@@ -245,8 +236,7 @@ def register_callbacks(app, plots: PlotService):
             fig.data[0].customdata = new_fig.data[0].customdata
             fig.data[0].hovertemplate = new_fig.data[0].hovertemplate
 
-        # 4. LAYOUT ÜBERNEHMEN (Title, Margin, Farben, etc.)
-        #fig.update_layout(new_fig.layout)
+
 
         return fig
     

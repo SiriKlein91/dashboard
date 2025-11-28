@@ -13,30 +13,40 @@ def map_bezirk(name):
     return "andere deutsche stadt"
 
 class AnalyticsService:
+    """
+        Klasse zur Datenverwaltung - Filtern, Kategorisierung, Gruppieren, Plotpreprocessing
+
+        Args:
+            customers (CustomerDataframe): Customer Klasse zur Verwaltung der Kunden
+            entries (EntryDataFrame): Entry Klasse zur Verwaltung der Eintrittsdaten
+
+        """
     def __init__(self, customers: CustomerDataFrame, entries: EntryDataFrame):
         self.customers = customers.df
         self.entries = entries.df
         # Mergen nach customer_id für Analysen
-        self.merged = self.entries.merge(self.customers, on="customer_id", how="left").drop(columns=["admission_y"]).rename(columns={"admission_x": "admission"})
-        self.merged = self.merged.merge(GERMAN_PLZ[["plz", "name"]], on="plz", how="left")
-        self.merged["bezirke"] = self.merged["name"].apply(map_bezirk)
+        self.merged = self.entries.merge(self.customers, on="customer_id", how="left").drop(columns=["admission_y"]).rename(columns={"admission_x": "admission"}) #Zussamenführen von ClassDataFrame und EntryDataFrame
+        self.merged = self.merged.merge(GERMAN_PLZ[["plz", "name"]], on="plz", how="left") #Postleitzahlortsteile hinzufügen
+        self.merged["bezirke"] = self.merged["name"].apply(map_bezirk) # Postleitzahlbezirke hinzufügen
 
         self.merged["bezirke"] = self.merged["bezirke"].fillna("deutsche Städte")
-        self.merged = self.create_bins()
+        self.merged = self.create_bins() #Alterskategorie, Einteilung nach Berliner/Tourist hinzufügen
      
 
-        self.total_count = self.customers.shape[0]
+        self.total_count = self.customers.shape[0] #Gesamtanzahl Kunden
 
     def __repr__(self):
-        # Wenn die Instanz in der Konsole angezeigt wird
         return repr(self.merged)
 
     def __str__(self):
-        # Wenn print() aufgerufen wird
         return str(self.merged)
    
 
     def filter_data(self, start=None, end=None, plz_list=None, country_list=None, admission_list=None, bezirke_list= None):
+        """
+        Filtern nach Anfangs- und Enddatum, Postleitzahlbereiche, Länder, Eintrittsart, Bezirk
+        """
+        
         df = self.merged.copy()
 
         # Start-/Enddatum prüfen
@@ -79,6 +89,8 @@ class AnalyticsService:
 
 
     def create_bins(self, start = None, end = None, plz_list = None, country_list = None, admission_list = None, dist=5):
+        # Kategorisierung nach Altersklasse, Geschlecht und Berlin/Tourist
+        
         df = self.filter_data(start, end, plz_list, country_list, admission_list)
 
         if df.empty:
@@ -114,7 +126,8 @@ class AnalyticsService:
 
     
     def create_histogram(self, start=None, end=None, plz_list=None, country_list=None, admission_list = None, bezirke_list= None):
-
+        #Präprozessierung für Alterklassenhistogram
+        # return gruppierte DataFrame nach Alterskategorie, Geschlechtern und Tourist/berlin
         df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
         df = df.drop_duplicates("customer_id")
         labels = CATEGORY_MAP["age_category"]
@@ -159,6 +172,7 @@ class AnalyticsService:
 
     
     def proportion(self, group_list, start=None, end=None, plz_list=None, country_list=None, admission_list=None, bezirke_list= None):
+        #Gruppierung anhand group_col
         df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
         if df.empty:
             warnings.warn("Filter führt zu leerem DataFrame. Ergebnis wird leer zurückgegeben.", UserWarning)
@@ -195,6 +209,7 @@ class AnalyticsService:
         )
     
     def plz_geo_summary(self, start=None, end=None, admission_list=None, bezirke_list=None):
+        # Präprozessieren vom Dataframe und mergen mit GDF zur Erstellung der Chloropleth Map
         df = self.filter_data(start=start, end=end, admission_list=admission_list, bezirke_list=bezirke_list)
         
         summary = df.groupby(["plz", "name"]).agg(
@@ -205,7 +220,6 @@ class AnalyticsService:
         summary["mean_age_rounded"] = summary["mean_age"].round(1)
         summary["share"] = summary["count"] / self.total_count * 100
 
-        # Sicherstellen, dass PLZ in beiden DataFrames den gleichen Typ haben
         summary["plz"] = summary["plz"].astype(str)
         GDF["plz"] = GDF["plz"].astype(str)
 
@@ -222,6 +236,7 @@ class AnalyticsService:
         return gdf_merged
     
     def plz_geo_summary_all_plz(self, start=None, end=None, admission_list=None, bezirke_list=None):
+        # Sicherstellen, dass alle PLZ angezeigt werden im Chloropleth
         df = self.plz_geo_summary(start=start, end=end, admission_list=admission_list, bezirke_list=bezirke_list)
 
         # Sicherstellen, dass alle PLZ angezeigt werden
@@ -235,12 +250,10 @@ class AnalyticsService:
     
     
     def create_loyalty_histogram(self, group_col, start=None, end=None, plz_list =None, country_list = None, admission_list=None, bezirke_list= None):
-        
+        #Präprozessieren für Häufigkeitsverteilung der Eintritte
         df = self.filter_data(start, end, plz_list, country_list, admission_list, bezirke_list)
         
         #df["bezirke"] = df["name"].str.contains("Berlin", na=False).replace({True: "Berlin", False: None})
-        
-        
         
         df = df.groupby(["customer_id", group_col], observed = True).agg(count=("entry_id", "size")).reset_index()
         #df= self.number_of_visits(group_col,start =start, end =end, plz_list = plz_list, country_list=country_list, admission_list=admission_list)
@@ -258,6 +271,7 @@ class AnalyticsService:
     
 
     def create_cohort_table(self, start=None, end=None, plz_list = None, admission_list = None):
+        
         df = self.filter_data(start=start, end=end, plz_list=plz_list,  admission_list = admission_list )
 
         # Erstbesuch pro Kunde

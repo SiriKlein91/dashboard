@@ -8,6 +8,13 @@ from globals import DE_STATES, CITY_DIC, BOULDERGYMS
 
 
 class PlotService:
+    """
+        Klasse zur Plotgenerierung 
+
+        Args:
+            analyitics (AnalyticsService): Klasse zur Datenverwaltung
+
+    """
     def __init__(self, analytics: AnalyticsService):
         self.analytics = analytics
 
@@ -15,6 +22,8 @@ class PlotService:
 
 
     def density_plot(self, start=None, end=None, admission_list=None):
+        #ChloroplethMap von Berlin
+
         df = self.analytics.plz_geo_summary_all_plz(start=start, end=end, admission_list=admission_list)
         
 
@@ -32,6 +41,7 @@ class PlotService:
             color_continuous_scale=px.colors.sequential.Greys
         )
 
+        #Hoverdata
         fig.update_traces(
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
@@ -42,6 +52,7 @@ class PlotService:
             customdata=df[["name", "count_filtered", "mean_age_rounded", "plz"]].values
         )
 
+        #Boulderhallen Berlins zur Karte hinzufügen
         for gym, coords in BOULDERGYMS.items():
             fig.add_trace(go.Scattermapbox(
                 lon=[coords[0]],
@@ -61,7 +72,7 @@ class PlotService:
 
     
     def age_histogram(self, start=None, end=None, plz_list=None, country_list=None,  admission_list = None, bezirke_list= None):
-    # Farben
+    # Kundendemographieplot nach Alterskategorien, Geschlechteranteile und Berliner/Tourist Klassifizierung
         color_map = {
             "Berlin": "#140697",
             "Tourist": "#09b9b9"
@@ -75,7 +86,7 @@ class PlotService:
 
         categories = df_plot["age_category"].cat.categories
 
-
+        #Annotationtext
         gender_text = "<br>".join([f"{row.gender}: {row.percent:.1f} %" for _, row in gender_share.iterrows()])
         origin_text = "<br>".join([f'<span style="color:{color_map[row.origin]};">■</span> {row.origin}: {row.percent:.1f} %'
                                 for _, row in origin_share.iterrows()])
@@ -93,7 +104,7 @@ class PlotService:
             barmode="stack",
             custom_data=["gender", "origin", "count"]  # für Hovertext
         )
-        print()
+        
         # Hovertext anpassen
         fig.update_traces(
             hovertemplate=
@@ -137,10 +148,14 @@ class PlotService:
 
     
     def sunburst_plot(self, group_list, start=None, end=None, plz_list=None, country_list=None, bezirke_list=None, limit=None):
+        
+        #Anteile von Eintrittsarten in Sunburstplot
+
         df = self.analytics.proportion(group_list, start, end, plz_list, country_list, bezirke_list)
         total = df["count"].sum()
         df["percent_total"] = df["count"] / total * 100
 
+        # Bei Unterschreiten eines Prozentlimits Kategorien in Sonstige zusammenfassen
         if limit:
             last_col = group_list[-1]
             df = df[df["count"] > 0]
@@ -153,7 +168,6 @@ class PlotService:
                 total = df["count"].sum()
                 df["percent_total"] = df["count"] / total * 100
 
-        # Definiere deine Farben pro Kategorie
         color_map = {
             "Abo": "#110296",
             "Tageseintritt": "#07ADCA",
@@ -161,7 +175,7 @@ class PlotService:
             "Sonstige": "#FA637C"
         }
 
-        # Hier wird die Farbe über die oberste Ebene der Gruppen gesetzt
+       
         fig = px.sunburst(
             df,
             path=group_list,
@@ -267,6 +281,8 @@ class PlotService:
     def loyalty_histogram(self, group_col, start=None, end=None,
                       plz_list=None, country_list=None, admission_list=None, bezirke_list=None):
 
+        #Häufigkeitsverteilung von Kundenbesuchen
+        
         freq, categories = self.analytics.create_loyalty_histogram(group_col, start, end, plz_list, country_list, admission_list)
 
         fig = go.Figure()
@@ -280,17 +296,16 @@ class PlotService:
                 "Sonstige": "#FA637C"
             }
         elif group_col == "age_category":
-            dummy_colors = px.colors.qualitative.Plotly  # 9 Farben
+            dummy_colors = px.colors.qualitative.Plotly  
             color_map = {cat: dummy_colors[i % len(dummy_colors)] for i, cat in enumerate(categories)}
         elif group_col == "bezirk":
-            dummy_colors = px.colors.qualitative.Set3  # 18 Farben
+            dummy_colors = px.colors.qualitative.Set3 
             color_map = {cat: dummy_colors[i % len(dummy_colors)] for i, cat in enumerate(categories)}
         else:
-            # fallback
             dummy_colors = px.colors.qualitative.Vivid
             color_map = {cat: dummy_colors[i % len(dummy_colors)] for i, cat in enumerate(categories)}
 
-        # Jede Kategorie als eigener Trace
+        
         for cat in categories:
             sub = freq[freq[group_col] == cat]
 
@@ -321,6 +336,7 @@ class PlotService:
 
     
     def cohort_heatmap(self, start=None, end=None, plz_list=None, admission_list=None):
+        #Kohortanalyseplot
         retention = self.analytics.create_cohort_table(start = start, end= end, plz_list=plz_list, admission_list=admission_list)
 
         fig = go.Figure(

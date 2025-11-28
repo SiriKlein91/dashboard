@@ -4,7 +4,7 @@ class CustomerDataFrame:
     REQUIRED_COLUMNS = ["customer_id", "admission", "age", "gender", "plz", "city", "country", "continent"]
 
     def __init__(self, df: pd.DataFrame):
-        # DataFrame kopieren, um Seiteneffekte zu vermeiden
+        
         self.df = df.copy()
 
         # Prüfen, ob alle benötigten Spalten vorhanden sind
@@ -12,7 +12,7 @@ class CustomerDataFrame:
         if missing_cols:
             raise ValueError(f"Fehlende Spalten: {missing_cols}")
 
-        # Optional: Datentypen setzen / konvertieren
+        
         self.df["customer_id"] = self.df["customer_id"].astype(int)
         self.df["admission"] = self.df["admission"].astype("category")
         self.df["age"] = self.df["age"].astype(int)
@@ -28,9 +28,7 @@ class CustomerDataFrame:
         return cls(df)
 
     def __repr__(self):
-        # Wenn die Instanz in der Konsole angezeigt wird
         return repr(self.df)
 
     def __str__(self):
-        # Wenn print() aufgerufen wird
         return str(self.df)

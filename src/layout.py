@@ -76,7 +76,7 @@ def create_layout(plots: PlotService):
                 dcc.Graph(id="admission-distribution", figure=plots.sunburst_plot(["admission", "admission_detail"], start=start_date, end=end_date))
             ], className="column middle-column"),
 
-            # Rechte Spalte: Platzhalter
+            # Rechte Spalte: Häufigkeitsverteilung + Kohortenanalyse
             html.Div([
                 dcc.Dropdown(options=[
                     {'label': 'Gebiet', 'value': 'bezirke'},
