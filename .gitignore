@@ -19,4 +19,4 @@ dist/
 *.egg-info/
 
 #
-assets/urban_apes_logo.png
+/assets/urban_apes_logo.png
